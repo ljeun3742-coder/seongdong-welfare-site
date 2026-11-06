@@ -1311,31 +1311,66 @@ function splitForSpeech(t, max = 110) { // 너무 긴 문장은 끊어서 읽습
   });
   return out;
 }
-function setReadMsg(text) { const m = document.querySelector('.read-bar .read-msg'); if (m) m.textContent = text; }
-function stopReading() { clearTimeout(readTimer); readQueue.length = 0; if (canSpeak) speechSynthesis.cancel(); }
+// 지금 소리가 나오는지 눈으로 알 수 있도록 상태를 보여 줍니다: wait(준비 중) · play(읽는 중) · done(다 읽음) · stop(멈춤) · error(소리 못 냄)
+let readGen = 0, readWatch = null, readStatus = 'wait', readTotal = 0, readDone = 0, readPlaying = 0, readErr = '';
+function paintRead() {
+  const speaking = readOn && readStatus === 'play';
+  readBtn.classList.toggle('speaking', speaking); // 머리글 버튼: 켜짐/끔과 "읽는 중"을 함께 표시
+  readBtn.textContent = !readOn ? '🔊 읽어주기' : speaking ? '🔊 읽는 중…' : '🔊 켜짐';
+  readBtn.setAttribute('aria-label', !readOn ? '읽어주기 켜기: 화면 내용을 소리로 읽어 줘요' : speaking ? '읽어주기 켜짐, 지금 읽는 중이에요. 누르면 꺼요' : '읽어주기 켜짐. 누르면 꺼요');
+  const bar = document.querySelector('.read-bar');
+  if (!bar) return;
+  const msg = {
+    wait: '읽을 준비를 하고 있어요…',
+    play: `지금 소리가 나오고 있어요 (${readPlaying} / ${readTotal})`,
+    done: '다 읽었어요. 다시 들으려면 "처음부터 다시"를 눌러 주세요.',
+    stop: '멈췄어요. 다시 들으려면 "처음부터 다시"를 눌러 주세요.',
+    error: readErr
+  }[readStatus];
+  bar.querySelector('.read-state').replaceChildren(...(readStatus === 'play' ? [el('span', { class: 'eq', 'aria-hidden': 'true' }, el('i'), el('i'), el('i'))] : []), msg);
+  const prog = bar.querySelector('progress');
+  prog.max = Math.max(readTotal, 1); prog.value = readDone; prog.hidden = readTotal === 0;
+  bar.querySelector('.read-stop').disabled = !(readStatus === 'play' || readStatus === 'wait');
+  bar.classList.toggle('playing', readStatus === 'play');
+}
+function stopReading() { clearTimeout(readTimer); clearTimeout(readWatch); readGen++; readQueue.length = 0; if (canSpeak) speechSynthesis.cancel(); }
+function userStopReading() { stopReading(); readStatus = 'stop'; paintRead(); } // "멈추기" 버튼
 function startReading() {
   if (!canSpeak) return;
   stopReading();
-  setReadMsg('');
+  const gen = readGen;
+  readStatus = 'wait'; readTotal = 0; readDone = 0; readPlaying = 0; readErr = '';
+  paintRead();
+  const fail = msg => { readStatus = 'error'; readErr = msg; paintRead(); };
   readTimer = setTimeout(() => { // 막 취소한 직후에는 일부 브라우저가 새 낭독을 무시해서 잠깐 쉬었다가 시작합니다
     const voices = speechSynthesis.getVoices();
     const ko = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ko'));
-    if (voices.length && !ko) { setReadMsg('이 기기에는 한국어 읽어주기 목소리가 없어서 읽어 드릴 수 없어요.'); return; }
-    screenChunks().map(speakableText).filter(Boolean).flatMap(t => splitForSpeech(t)).forEach(t => {
+    if (voices.length && !ko) return fail('이 기기에는 한국어 읽어주기 목소리가 없어서 읽어 드릴 수 없어요.');
+    const texts = screenChunks().map(speakableText).filter(Boolean).flatMap(t => splitForSpeech(t));
+    readTotal = texts.length;
+    if (!readTotal) { readStatus = 'done'; paintRead(); return; }
+    texts.forEach((t, i) => {
       const u = new SpeechSynthesisUtterance(t);
       u.lang = 'ko-KR'; u.rate = 0.9;
       if (ko) u.voice = ko;
+      u.onstart = () => { if (gen !== readGen) return; clearTimeout(readWatch); readStatus = 'play'; readPlaying = i + 1; paintRead(); };
+      u.onend = () => { if (gen !== readGen) return; readDone = i + 1; if (readDone >= readTotal) readStatus = 'done'; paintRead(); };
+      u.onerror = e => { if (gen !== readGen || e.error === 'canceled' || e.error === 'interrupted') return; fail('소리를 내지 못했어요. 기기의 소리 크기와 무음 모드를 확인해 주세요.'); };
       readQueue.push(u);
       speechSynthesis.speak(u);
     });
+    paintRead();
+    // 3초가 지나도 소리가 시작되지 않으면 알려 줍니다 (무음 모드, 소리 장치 없음, 브라우저가 막은 경우)
+    readWatch = setTimeout(() => { if (gen === readGen && readStatus === 'wait') fail('소리가 시작되지 않았어요. 기기의 소리 크기와 무음 모드를 확인한 뒤 "처음부터 다시"를 눌러 주세요.'); }, 3000);
   }, 150);
 }
 function readBar() {
   return el('div', { class: 'read-bar', role: 'group', 'aria-label': '읽어주기 조절' },
     el('strong', {}, '🔊 읽어주기 켜짐'),
     el('button', { type: 'button', class: 'voice-btn', onclick: startReading }, '▶ 처음부터 다시'),
-    el('button', { type: 'button', class: 'voice-btn', onclick: stopReading }, '⏹ 멈추기'),
-    el('p', { class: 'read-msg small', role: 'status' }));
+    el('button', { type: 'button', class: 'voice-btn read-stop', onclick: userStopReading }, '⏹ 멈추기'),
+    el('div', { class: 'read-state', role: 'status', 'aria-live': 'polite' }),
+    el('progress', { max: '1', value: '0', 'aria-label': '읽은 정도' }));
 }
 
 function render() {
@@ -1364,11 +1399,9 @@ if (!canSpeak) readBtn.hidden = true; // 이 브라우저가 읽어주기를 지
 readBtn.addEventListener('click', () => {
   readOn = !readOn;
   readBtn.setAttribute('aria-pressed', String(readOn));
-  readBtn.setAttribute('aria-label', readOn ? '읽어주기 끄기' : '읽어주기 켜기: 화면 내용을 소리로 읽어 줘요');
-  readBtn.textContent = readOn ? '🔊 읽어주기 켜짐' : '🔊 읽어주기';
   setSiteMenu(false);
   $main.querySelector('.read-bar')?.remove();
-  if (readOn) { $main.prepend(readBar()); startReading(); } else stopReading();
+  if (readOn) { $main.prepend(readBar()); startReading(); } else { stopReading(); paintRead(); }
 });
 window.addEventListener('pagehide', stopReading);
 
