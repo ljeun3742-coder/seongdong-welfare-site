@@ -1262,9 +1262,7 @@ const screens = {
     return [
       el('h2', {}, '성동구 복지관 정보'),
       bubble('복지관을 처음 이용하셔도 괜찮아요. 복지관마다 제공하는 프로그램과 이용 대상이 다를 수 있습니다.'),
-      el('h2', { style: 'font-size:1.2rem' }, '📅 행사 캘린더'),
-      calendarSection(),
-      el('p', { class: 'small' }, '공식 안내로 확인한 일정만 담았습니다. 일정은 바뀔 수 있으니 참여 전에 한 번 더 확인해 주세요.'),
+      btn('📅  복지관 행사 캘린더 보기', () => go('events')),
       el('h2', { style: 'font-size:1.2rem;margin-top:22px' }, '📝 수강신청은 언제, 어떻게 하나요?'),
       el('p', { class: 'small' }, '복지관은 프로그램마다 접수 날짜가 다르고, 날짜를 공지하지 않는 곳도 많아요. 공개된 내용만 정리했으니 신청 전에 전화로 한 번 더 확인해 주세요.'),
       ...applyGuide.map(g => el('div', { class: 'card' }, el('h3', {}, g.name), el('p', { style: 'margin:0 0 6px' }, g.text), small('☎ ' + g.phone))),
@@ -1278,6 +1276,24 @@ const screens = {
 };
 
 screens.bus = () => (state.busStop ? busStopResult(state.busStop) : busPickerScreen());
+// 복지관 행사 화면 (머리글의 "📅 복지관 행사" 버튼): 행사 캘린더를 보여 줍니다
+screens.events = () => [
+  el('h2', {}, '📅 복지관 행사'),
+  bubble('성동구 복지관과 마을 행사 일정을 달력으로 볼 수 있어요. 점이 있는 날짜를 누르면 그날의 행사가 나와요.'),
+  calendarSection(),
+  el('p', { class: 'small' }, '공식 안내로 확인한 일정만 담았습니다. 일정은 바뀔 수 있으니 참여 전에 한 번 더 확인해 주세요.'),
+  btn('🏠  성동구 복지관 정보 보기', () => go('center-info')),
+  btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
+];
+// 머리글 버튼에 "앞으로 열릴 행사 개수"를 작은 숫자로 보여 줍니다 (오늘 이후에 끝나는 행사)
+function paintEventBadge() {
+  const b = document.getElementById('eventBadge'), btnEl = document.getElementById('eventBtn');
+  if (!b || !btnEl) return;
+  const now = new Date(), t = ymd(now.getFullYear(), now.getMonth(), now.getDate());
+  const n = events.filter(e => evEnd(e) >= t).length;
+  b.hidden = n === 0; b.textContent = n;
+  btnEl.setAttribute('aria-label', n ? `복지관 행사 보기, 앞으로 열릴 행사 ${n}개` : '복지관 행사 보기');
+}
 
 /* ---------- 읽어주기: 켜 두면 화면이 바뀔 때마다 내용을 소리로 읽어 줍니다 (브라우저 내장 음성) ---------- */
 // 화면 글자를 덩어리로 모아 읽습니다. 버튼·입력칸·정류장 목록은 건너뛰고, 성공버스 시간표는 표 제목(첫차·막차)만 읽어요.
@@ -1395,6 +1411,7 @@ function readBar() {
 function render() {
   stopReading();
   $main.replaceChildren(...screens[state.screen]().filter(Boolean));
+  paintEventBadge();
   if (readOn) { $main.prepend(readBar()); startReading(); }
   const home = state.screen === 'home';
   $banner.hidden = home;
@@ -1423,6 +1440,9 @@ readBtn.addEventListener('click', () => {
   if (readOn) { $main.prepend(readBar()); startReading(); } else { stopReading(); paintRead(); }
 });
 window.addEventListener('pagehide', stopReading);
+
+/* ---------- 복지관 행사 보기 (머리글 버튼) ---------- */
+document.getElementById('eventBtn').addEventListener('click', () => { setSiteMenu(false); go('events'); });
 
 /* ---------- 성공버스 시간표 보기 (머리글 버튼) ---------- */
 document.getElementById('busBtn').addEventListener('click', () => { setSiteMenu(false); go('bus', { busStop: null }); });

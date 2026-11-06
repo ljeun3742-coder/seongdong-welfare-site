@@ -30,12 +30,8 @@ button { font: inherit; cursor: pointer; }
 .brand { background: none; border: 0; color: var(--accent); font-weight: 800; font-size: 1.1rem; padding: 8px 4px; }
 .font-btn { background: var(--peach); border: 0; border-radius: 12px; color: var(--accent); font-weight: 700; font-size: .9rem; padding: 10px 14px; }
 .top { flex-wrap: wrap; }
-@media (max-width: 600px) { /* 폰에서는 버튼이 두 줄로 내려가므로 고정 머리글을 작게 합니다 */
-  .top { min-height: 0; padding: 6px 12px; gap: 2px 8px; }
-  .brand { padding: 4px 2px; }
-  .font-btn { padding: 8px 10px; font-size: .85rem; }
-}
 .top-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+.tools, .navs { display: flex; align-items: center; gap: 8px; }
 .site-menu { position: relative; }
 .site-panel {
   position: absolute; right: 0; top: calc(100% + 8px); min-width: 200px;
@@ -48,15 +44,26 @@ button { font: inherit; cursor: pointer; }
   color: var(--accent); font-weight: 700; font-size: .95rem; text-decoration: none;
 }
 .site-panel a:hover, .site-panel a:focus-visible { background: var(--peach); }
-@media (max-width: 420px) {
-  .brand { font-size: 1rem; }
-  .font-btn { padding: 8px 6px; font-size: .78rem; }
-  .top-actions { gap: 4px; }
-  .top { padding-left: 8px; padding-right: 8px; }
+/* 폰(폭 700px 이하): 머리글을 두 줄로 정리합니다.
+   윗줄 = 이름 + 가+ 글씨 · 읽어주기, 아랫줄 = 성공버스 · 행사 · 복지사이트 (세 버튼이 같은 크기로 꽉 차게) */
+@media (max-width: 700px) {
+  .top { min-height: 0; padding: 8px 12px; gap: 4px 8px; }
+  .top-actions { display: contents; }
+  .tools { margin-left: auto; }
+  .navs { flex: 1 1 100%; gap: 6px; }
+  .navs > * { flex: 1 1 0; min-width: 0; }
+  .navs .font-btn { width: 100%; padding: 9px 4px; font-size: .85rem; white-space: nowrap; }
+  .brand { font-size: 1rem; padding: 4px 2px; }
+  .tools .font-btn { padding: 8px 10px; font-size: .85rem; }
 }
-@media (max-width: 380px) { /* 아주 좁은 폰: 버튼 네 개가 한 줄에 들어가도록 */
-  .font-btn { padding: 8px 4px; font-size: .72rem; }
-  .top-actions { gap: 3px; }
+@media (max-width: 380px) { /* 아주 좁은 폰 */
+  .tools .font-btn { padding: 8px 7px; font-size: .78rem; }
+  .navs .font-btn { font-size: .78rem; }
+}
+@media (max-width: 350px) { /* 더 좁은 폰: 윗줄(이름 + 두 버튼)이 한 줄에 들어가도록 */
+  .brand { font-size: .9rem; }
+  .tools { gap: 4px; }
+  .tools .font-btn { padding: 8px 5px; font-size: .72rem; }
 }
 
 .demo-banner {
@@ -137,6 +144,10 @@ dl.info dd { margin: 0; }
 .bus-stops ol { margin: 0; padding-left: 1.8em; }
 .bus-stops li { padding: 4px 0; }
 .xfer { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 999px; background: var(--peach); color: var(--accent); font-size: .8rem; font-weight: 700; }
+/* 복지관 행사 버튼의 개수 표시 */
+.badge { display: inline-block; min-width: 1.4em; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: .72rem; line-height: 1.5; text-align: center; vertical-align: 1px; }
+.badge[hidden] { display: none; }
+
 /* 읽어주기 */
 .font-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
 .read-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; padding: 10px 12px; background: #EAF3FF; border: 1.5px solid #9CC2EE; border-radius: 12px; color: #1B4F8A; }
