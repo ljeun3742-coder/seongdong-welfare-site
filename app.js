@@ -773,6 +773,30 @@ function busSchedule() {
     tabs, panel);
 }
 
+/* ---------- 영유아·어린이 화면: 우리동네키움센터(아이꿈누리터) 목록 ---------- */
+// 성동구 주요 우리동네키움센터 목록 (사용자가 알려 준 내용, 2026-11-06). 이용 대상·운영 시간·신청 방법은 확인하지 못해서
+// 센터에 전화로 확인하도록 안내합니다. 전화번호는 알려 준 곳만 적었습니다.
+const KIUM_CENTERS = [
+  { name: '성동1호점 (스위첸아이꿈누리터)', addr: '서울 성동구 무학봉길 35, 103동 2층' },
+  { name: '성동2호점 (왕십리도선동아이꿈누리터)', addr: '서울 성동구 마장로 141', phone: '02-2286-7215' },
+  { name: '성동4호점 (응봉아이꿈누리터)', addr: '서울 성동구 독서당로 381, 현대종합상가 304호' },
+  { name: '성동5호점 (성수복지관 아이꿈누리터)', addr: '서울 성동구 뚝섬로1길 43', phone: '02-463-6669' },
+  { name: '성동8호점', addr: '서울 성동구 청계천로 506', phone: '02-6015-0048' },
+  { name: '성동11호점 (신금호아이꿈누리터)', addr: '서울 성동구 금호로 6, 103호', phone: '02-2297-9717' }
+];
+function kiumSection() {
+  return [
+    el('h2', { style: 'font-size:1.15rem;margin-top:20px' }, '🏫 우리동네키움센터 (아이꿈누리터)'),
+    small('성동구의 주요 우리동네키움센터(아이꿈누리터) 목록이에요. 이용 대상과 운영 시간, 신청 방법은 센터마다 다를 수 있으니 가까운 곳에 전화로 확인해 주세요.'),
+    el('div', { style: 'height:10px' }),
+    ...KIUM_CENTERS.map(c => el('div', { class: 'card' },
+      el('h3', {}, c.name),
+      el('p', { class: 'small' }, '📍 ' + c.addr),
+      c.phone ? el('a', { class: 'choice', href: 'tel:' + c.phone.replace(/[^0-9]/g, '') }, `📞  전화하기  ${c.phone}`) : small('☎ 전화번호는 아직 확인하지 못했어요'),
+      el('a', { class: 'choice secondary', href: mapUrl(c.addr), target: '_blank', rel: 'noopener noreferrer' }, '📍 지도에서 위치 보기 ↗')))
+  ];
+}
+
 /* ---------- "식사를 준비하기 어려워요" → 밑반찬 서비스 안내 ---------- */
 // 출처(2026-11-06 확인): 성동구청 식사지원(key=5235, 최종수정 2025-11-04)·1인가구 지원사업(key=4778),
 // 성동종합사회복지관 노인사회활동지원사업 안내(linksd.net co_id=0308), 서울시50플러스재단 2025 일자리 공고(성동종합복지관),
@@ -1061,6 +1085,7 @@ const screens = {
       small('기관 공식 안내로 확인한 내용이에요. 대상과 모집 시기는 바뀔 수 있으니 신청 전에 전화로 확인해 주세요.'),
       el('div', { style: 'height:10px' }),
       ...otherCenters.map(programCard),
+      ...(g.id === 'child' ? kiumSection() : []),
       small('이 사이트는 지원 자격을 판정하지 않습니다. 정확한 대상 여부는 129 또는 주민센터에서 확인해 주세요.'),
       el('div', { style: 'height:14px' }),
       btn('💰  소득이 어려울 때 받을 수 있는 지원 보기', () => go('results', { category: 'money', step: 0, answers: [] })),
