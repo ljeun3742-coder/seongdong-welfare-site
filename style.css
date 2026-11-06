@@ -238,7 +238,7 @@ a.more { text-decoration: none; }
 .m-smile { position: absolute; left: 0; right: 0; top: 66px; text-align: center; font-size: 45px; line-height: 49px; color: #6C4537; }
 .m-blush { position: absolute; top: 89px; width: 27px; height: 13px; border-radius: 10px; background: #EBA38E; }
 .m-blush.l { left: 22px; } .m-blush.r { right: 22px; }
-.m-wave { position: absolute; right: 7px; bottom: 54px; font-size: 29px; transform: rotate(-22deg); animation: wave 2.4s ease-in-out infinite; transform-origin: 70% 70%; }
+.m-wave { position: absolute; right: 2px; bottom: 52px; font-size: 40px; transform: rotate(-22deg); animation: wave 2.4s ease-in-out infinite; transform-origin: 70% 70%; }
 @keyframes wave { 0%,100% { transform: rotate(-22deg); } 50% { transform: rotate(-4deg); } }
 @media (prefers-reduced-motion: reduce) { .m-wave { animation: none; } }
 
