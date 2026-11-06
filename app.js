@@ -1351,7 +1351,7 @@ let readGen = 0, readWatch = null, readStatus = 'wait', readTotal = 0, readDone 
 function paintRead() {
   const speaking = readOn && readStatus === 'play';
   readBtn.classList.toggle('speaking', speaking); // 머리글 버튼: 켜짐/끔과 "읽는 중"을 함께 표시
-  readBtn.textContent = !readOn ? '🔊 읽어주기' : speaking ? '🔊 읽는 중…' : '🔊 켜짐';
+  readBtn.querySelector('.tx').textContent = !readOn ? ' 읽어주기' : speaking ? ' 읽는 중…' : ' 켜짐'; // 🔊 아이콘(.ic)은 그대로 둡니다
   readBtn.setAttribute('aria-label', !readOn ? '읽어주기 켜기: 화면 내용을 소리로 읽어 줘요' : speaking ? '읽어주기 켜짐, 지금 읽는 중이에요. 누르면 꺼요' : '읽어주기 켜짐. 누르면 꺼요');
   const bar = document.querySelector('.read-bar');
   if (!bar) return;

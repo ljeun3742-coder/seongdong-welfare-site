@@ -30,8 +30,7 @@ button { font: inherit; cursor: pointer; }
 .brand { background: none; border: 0; color: var(--accent); font-weight: 800; font-size: 1.1rem; padding: 8px 4px; }
 .font-btn { background: var(--peach); border: 0; border-radius: 12px; color: var(--accent); font-weight: 700; font-size: .9rem; padding: 10px 14px; }
 .top { flex-wrap: wrap; }
-.top-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
-.tools, .navs { display: flex; align-items: center; gap: 8px; }
+.top-actions { display: flex; align-items: center; gap: 8px; }
 .site-menu { position: relative; }
 .site-panel {
   position: absolute; right: 0; top: calc(100% + 8px); min-width: 200px;
@@ -44,26 +43,22 @@ button { font: inherit; cursor: pointer; }
   color: var(--accent); font-weight: 700; font-size: .95rem; text-decoration: none;
 }
 .site-panel a:hover, .site-panel a:focus-visible { background: var(--peach); }
-/* 폰(폭 700px 이하): 머리글을 두 줄로 정리합니다.
-   윗줄 = 이름 + 가+ 글씨 · 읽어주기, 아랫줄 = 성공버스 · 행사 · 복지사이트 (세 버튼이 같은 크기로 꽉 차게) */
+/* 폰(폭 700px 이하): 이름 아래에 "한 줄 바"를 둡니다. 버튼 5개가 폭을 똑같이 나눠 쓰고,
+   각 버튼은 아이콘 위에 짧은 글씨가 와서 어떤 폰에서도 한 줄에 다 들어갑니다. */
 @media (max-width: 700px) {
-  .top { min-height: 0; padding: 8px 12px; gap: 4px 8px; }
-  .top-actions { display: contents; }
-  .tools { margin-left: auto; }
-  .navs { flex: 1 1 100%; gap: 6px; }
-  .navs > * { flex: 1 1 0; min-width: 0; }
-  .navs .font-btn { width: 100%; padding: 9px 4px; font-size: .85rem; white-space: nowrap; }
-  .brand { font-size: 1rem; padding: 4px 2px; }
-  .tools .font-btn { padding: 8px 10px; font-size: .85rem; }
+  .top { min-height: 0; padding: 4px 8px 8px; gap: 2px; }
+  .brand { flex: 1 1 100%; text-align: left; font-size: 1rem; padding: 4px 4px 2px; }
+  .top-actions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; width: 100%; }
+  .site-menu { min-width: 0; }
+  .top-actions .font-btn { width: 100%; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px 2px; font-size: .76rem; line-height: 1.2; }
+  .font-btn .ic { font-size: 1.25rem; line-height: 1; }
+  .font-btn .tx { display: block; text-align: center; }
+  .caret, .hide-sm { display: none; }
 }
-@media (max-width: 380px) { /* 아주 좁은 폰 */
-  .tools .font-btn { padding: 8px 7px; font-size: .78rem; }
-  .navs .font-btn { font-size: .78rem; }
-}
-@media (max-width: 350px) { /* 더 좁은 폰: 윗줄(이름 + 두 버튼)이 한 줄에 들어가도록 */
-  .brand { font-size: .9rem; }
-  .tools { gap: 4px; }
-  .tools .font-btn { padding: 8px 5px; font-size: .72rem; }
+@media (max-width: 360px) { /* 아주 좁은 폰 */
+  .top { padding-left: 6px; padding-right: 6px; }
+  .top-actions { gap: 3px; }
+  .top-actions .font-btn { font-size: .68rem; padding: 6px 1px; }
 }
 
 .demo-banner {
@@ -165,7 +160,6 @@ dl.info dd { margin: 0; }
 .font-btn.speaking { animation: readpulse 1.3s ease-in-out infinite; }
 @keyframes readpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(185, 95, 54, .6); } 50% { box-shadow: 0 0 0 6px rgba(185, 95, 54, 0); } }
 @media (prefers-reduced-motion: reduce) { .eq i, .font-btn.speaking { animation: none; } }
-@media (max-width: 420px) { .hide-sm { display: none; } }
 
 /* 성공버스: 타는 곳 고르기 */
 .bus-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
