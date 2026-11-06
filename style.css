@@ -29,7 +29,13 @@ button { font: inherit; cursor: pointer; }
 }
 .brand { background: none; border: 0; color: var(--accent); font-weight: 800; font-size: 1.1rem; padding: 8px 4px; }
 .font-btn { background: var(--peach); border: 0; border-radius: 12px; color: var(--accent); font-weight: 700; font-size: .9rem; padding: 10px 14px; }
-.top-actions { display: flex; align-items: center; gap: 8px; }
+.top { flex-wrap: wrap; }
+@media (max-width: 600px) { /* 폰에서는 버튼이 두 줄로 내려가므로 고정 머리글을 작게 합니다 */
+  .top { min-height: 0; padding: 6px 12px; gap: 2px 8px; }
+  .brand { padding: 4px 2px; }
+  .font-btn { padding: 8px 10px; font-size: .85rem; }
+}
+.top-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
 .site-menu { position: relative; }
 .site-panel {
   position: absolute; right: 0; top: calc(100% + 8px); min-width: 200px;
@@ -44,8 +50,12 @@ button { font: inherit; cursor: pointer; }
 .site-panel a:hover, .site-panel a:focus-visible { background: var(--peach); }
 @media (max-width: 420px) {
   .brand { font-size: 1rem; }
-  .font-btn { padding: 10px; font-size: .82rem; }
-  .top-actions { gap: 6px; }
+  .font-btn { padding: 8px 9px; font-size: .82rem; }
+  .top-actions { gap: 5px; }
+}
+@media (max-width: 380px) { /* 아주 좁은 폰: 버튼 세 개가 한 줄에 들어가도록 */
+  .font-btn { padding: 8px 6px; font-size: .78rem; }
+  .top-actions { gap: 4px; }
 }
 
 .demo-banner {
@@ -126,6 +136,18 @@ dl.info dd { margin: 0; }
 .bus-stops ol { margin: 0; padding-left: 1.8em; }
 .bus-stops li { padding: 4px 0; }
 .xfer { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 999px; background: var(--peach); color: var(--accent); font-size: .8rem; font-weight: 700; }
+/* 성공버스: 타는 곳 고르기 */
+.bus-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.chip { min-height: 48px; padding: 8px 14px; background: #fff; border: 2.5px solid var(--border); border-radius: 999px; color: var(--ink); font-weight: 800; font-size: .95rem; }
+.chip.on { border-color: var(--rc, var(--accent)); background: var(--rcbg, var(--peach)); }
+.chip.on::after { content: ' ✓'; }
+.stop-list { display: grid; gap: 8px; margin-top: 8px; }
+.stop-btn { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 56px; padding: 10px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: 12px; color: var(--ink); font-weight: 700; text-align: left; line-height: 1.4; }
+.stop-btn:hover { background: var(--peach); }
+.stop-rt { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.rt { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--rc); color: #fff; font-weight: 800; font-size: .75rem; white-space: nowrap; }
+.rt.r3 { color: var(--ink); }
+.bus-sub { margin: 14px 0 6px; font-weight: 800; }
 .voice-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .voice-btn { min-height: 48px; padding: 10px 14px; background: var(--peach); border: 1.5px solid var(--accent-soft); border-radius: 12px; color: var(--accent); font-weight: 700; font-size: .95rem; }
 .voice-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }

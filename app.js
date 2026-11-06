@@ -279,7 +279,7 @@ const keywordMap = [
 ];
 
 /* ---------- 상태 ---------- */
-const state = { screen: 'home', group: 'daily', category: 'unknown', step: 0, answers: [], detail: null, age: null };
+const state = { screen: 'home', group: 'daily', category: 'unknown', step: 0, answers: [], detail: null, age: null, busStop: null };
 const history = []; // 이전 화면 스택
 
 const $main = document.getElementById('main');
@@ -331,7 +331,7 @@ function back() {
 }
 function reset() {
   history.length = 0;
-  Object.assign(state, { screen: 'home', step: 0, answers: [], detail: null });
+  Object.assign(state, { screen: 'home', step: 0, answers: [], detail: null, busStop: null });
   render();
 }
 
@@ -689,9 +689,8 @@ function consultForm() {
 /* ---------- 화면 ---------- */
 /* ---------- 성공버스 시간표 ---------- */
 // 출처: 성동구청 성공버스 안내(key=5108, 페이지 최종수정 2026-03-10, 2026-11-05 확인).
-// 구청 페이지에는 정류장별 출발 시각표가 없고 운행 시간대·배차 간격·정류장 순서만 있습니다.
-// 그래서 기점 출발 시각은 "첫차 + 배차 간격"으로 계산한 예상 시각입니다(네 노선 모두 첫차~막차 출발이 배차 간격으로 나누어떨어지고,
-// 막차 출발 + 1회 운행 시간 = 공식 운행 종료 시각과 일치함을 확인). 길이 막히면 늦어질 수 있어 앱·정류장 표지판 확인을 안내합니다.
+// 이 노선 소개 화면의 정류장 순서(stops)는 구청 메인 안내 기준이고, 기점 출발 시각은 "첫차 + 배차 간격 × (n-1)"입니다.
+// 구청 노선별 운행시간표(정류장별 도착 시각)는 아래 BUS_TT 에 따로 있고, 두 방식의 기점 출발 시각이 서로 일치함을 확인했습니다.
 const BUS_ROUTES = [
   { no: 1, color: '파랑', cls: 'r1', area: '성수–성동구청–응봉–신금호', start: '서울숲복합문화체육센터', first: '07:30', last: '18:33', arrive: '19:38', gap: 17, ride: 65, stops: [
     ['서울숲복합문화체육센터'], ['성동50플러스센터(한양대앞)', '3노선 환승'], ['성동구청(왕십리역 4번출구)', '2·3노선 환승'], ['성동청소년센터(성동우체국)'],
@@ -751,7 +750,7 @@ function busRoutePanel(r) {
           el('th', { scope: 'row' }, `${pad2(h)}시`, cur ? el('span', { class: 'now-tag' }, '지금') : null),
           el('td', {}, mins.map(m => el('span', { class: 'bus-min' }, pad2(m) + '분'))));
       }))),
-    small('출발 시각은 구청이 알려 준 첫차·막차·배차 간격으로 계산한 예상이에요. 길이 막히면 늦어질 수 있어요. 정류장마다 도착하는 시각은 "성공버스" 앱이나 정류장 표지판에서 확인해 주세요.'),
+    small('출발 시각은 구청 운행시간표(회차별 시각)와 같아요. 길이 막히면 늦어질 수 있어요. 내가 타는 정류장의 도착 시각은 위의 "정류장으로 시간표 찾기"에서 볼 수 있어요.'),
     el('details', { class: 'bus-stops' },
       el('summary', {}, `정류장 순서 보기 (${r.stops.length}곳)`),
       el('ol', {}, r.stops.map(([name, xfer]) => el('li', {}, name, xfer ? el('span', { class: 'xfer' }, xfer) : null))))
@@ -770,7 +769,8 @@ function busSchedule() {
   show(BUS_ROUTES[0]);
   return el('section', { class: 'bus' },
     el('div', { class: 'bus-quick' }, '🚌 월~금요일만 다녀요 (토·일·공휴일 쉼) · 요금 무료 · 휴대폰 앱의 QR 탑승권으로 타요 (만 65세 이상은 신분증)'),
-    el('h3', { class: 'bus-pick' }, '타려는 노선을 골라 주세요'),
+    btn('🚌  정류장으로 시간표 찾기 (어디서 타세요?)', () => go('bus', { busStop: null })),
+    el('h3', { class: 'bus-pick' }, '또는 노선을 골라 보세요'),
     tabs, panel);
 }
 
@@ -856,6 +856,144 @@ function sideDishResult() {
     el('a', { class: 'choice secondary', href: SIDE_DISH_URL, target: '_blank', rel: 'noopener noreferrer' }, '성동구청 식사지원 공식 안내 보기 ↗'),
     btn('📚  다른 도움도 찾아보기', () => go('topics')),
     btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
+  ];
+}
+
+/* ---------- 성공버스: 타는 곳을 고르면 그 정류장의 도착 시각 보기 ---------- */
+// 출처: 성동구청 성공버스 노선별 운행시간표(1노선 key=5407, 2노선 5408, 3노선 5409, 4노선 5410, 최종수정 2026-03-10·11), 2026-11-06 확인.
+// 각 값은 "기점 출발 후 몇 분 뒤에 이 정류장에 도착하나"(표의 1회차 시각 기준)이고, n회차 시각은 기점 출발 시각(첫차 + 배차 간격 × (n-1))에 이 값을 더합니다.
+// 표의 "소요(분)" 열과 시각 열이 일부 어긋나는 곳(1·2노선의 12→13 구간)이 있어 시각 열을 따랐고, 마지막 정류장까지의 합은 공식 한 바퀴 시간(65·60·35·45분)과 같습니다.
+// 세 번째 값 'E'는 종점(내리는 곳)이라 "타는 곳" 목록에서 뺍니다. 같은 정류장을 가는 길·오는 길에 두 번 지나면 한 정류장에 시각표가 둘 나옵니다.
+const BUS_TT = {
+  1: { page: 5407, rows: [
+    ['서울숲복합문화체육센터', 0], ['성동50플러스센터(한양대앞)', 3], ['성동구청(왕십리역 4번출구)', 7], ['성동청소년센터(성동우체국)', 9],
+    ['행당제1동 주민센터(무학여고)', 11], ['응봉동 주민센터', 13], ['금호동1가 공영주차장(금호벽산하이피아 상가)', 15], ['성동아이사랑복합문화센터(금호고)', 17],
+    ['금호2·3가동 주민센터', 19], ['금호1가동 주민센터(성동구보건소 금호분소)', 21], ['성동구립 금호도서관(성동공유센터)', 23], ['금호동1가 공영주차장(성동행당새마을금고)', 25],
+    ['응봉동 주민센터', 29], ['행당제1동 주민센터', 32], ['성동구청(왕십리역 6-1번출구)', 37], ['성동50플러스센터(한양대앞)', 40],
+    ['서울숲복합문화체육센터(서울숲아이파크리버포레 1차)', 43], ['성수문화복지회관(뚝섬역 8번출구)', 46], ['성동지역경제혁신센터(뚝섬역 5번출구)', 48],
+    ['성수역 스마트도서관(성수역 3번출구)', 52], ['성수2가제1동 주민센터', 56], ['성수1가제1동 주민센터(성동상생도시센터)', 59],
+    ['언더스탠드에비뉴(서울숲역 2번출구)', 61], ['성수1가제2동 주민센터', 63], ['서울숲복합문화체육센터(종점)', 65, 'E']] },
+  2: { page: 5408, rows: [
+    ['성동구립 용답체육센터', 0], ['용답동 노인복지관', 1], ['용답창업보육실(용답새마을금고)', 2], ['용답동 주민센터', 4], ['성동구립 용답도서관(답십리역 2번출구)', 7],
+    ['용답휴식공원(신답역)', 12], ['시립성동노인종합복지관', 14], ['마장동주민센터', 16], ['사근동 마을활력소(사근제4경로당)', 18],
+    ['사근동 주민센터(사근 스마트헬스케어센터)', 20], ['성동50플러스센터(한양시장)', 22], ['성동구청(왕십리역 4번출구)', 24], ['상왕십리역 스마트도서관', 28],
+    ['왕십리장난감세상', 30], ['왕십리도선동주민센터', 31], ['꽃재어린이공원', 32], ['성동구보건소', 34], ['성동구청(왕십리역 6-1번출구)', 39],
+    ['성동50플러스센터(한양시장)', 42], ['사근동주민센터(사근 스마트헬스케어센터)', 44], ['사근동 마을활력소(사근제4경로당)', 46], ['마장동주민센터', 48],
+    ['용답휴식공원(신답역)', 51], ['성동구립 용답도서관(답십리역 5번출구)', 53], ['용답동 주민센터', 54], ['용답창업보육실(용답새마을금고)', 56],
+    ['용답동 노인복지관', 59], ['성동구립 용답체육센터', 60, 'E']] },
+  3: { page: 5409, rows: [
+    ['송정동 공공복합청사', 0], ['송정 스마트헬스케어센터', 2], ['송정제방길 어린이상상마당(성동세무서)', 4], ['성수2가제3동주민센터(금호베스트빌아파트)', 6], ['성동안심상가', 8],
+    ['서울숲복합문화체육센터(한양대 방면)', 10], ['성동50플러스센터(한양대앞)', 13], ['성동구청(왕십리역 4번출구)', 17], ['소월아트홀', 20],
+    ['성동50플러스센터(한양대앞)', 22], ['서울숲복합문화체육센터(성동세무서 방면)', 25], ['성동안심상가', 27], ['성수2가제3동주민센터', 29],
+    ['송정제방길 어린이상상마당(성동세무서)', 31], ['송정 스마트헬스케어센터', 33], ['송정동 공공복합청사', 35, 'E']] },
+  4: { page: 5410, rows: [
+    ['성동구청(왕십리역 6-1번출구)', 0], ['행당제2동 주민센터(행당역)', 7], ['성동아이사랑복합문화센터', 11], ['금호4가동 주민센터', 16], ['옥수동 주민센터', 19],
+    ['매봉산 유아숲체험원', 23], ['옥수동 주민센터', 25], ['금호4가동 주민센터', 28], ['성동아이사랑복합문화센터', 32], ['행당제2동 주민센터(행당역)', 37],
+    ['행당제1동 주민센터', 41], ['성동구청(왕십리민자역사)', 45, 'E']] }
+};
+// 같은 정류장인데 표마다 이름이 조금 다르게 적힌 것만 하나로 묶습니다 (출구·방면이 다른 정류장은 따로 둡니다)
+const BUS_ALIAS = {
+  '행당제1동 주민센터(무학여고)': '행당제1동 주민센터',
+  '성수2가제3동주민센터': '성수2가제3동주민센터(금호베스트빌아파트)',
+  '사근동주민센터(사근 스마트헬스케어센터)': '사근동 주민센터(사근 스마트헬스케어센터)'
+};
+const busKey = name => BUS_ALIAS[name] || name;
+function busStops() {
+  const map = new Map();
+  BUS_ROUTES.forEach(r => BUS_TT[r.no].rows.forEach(([name, , end], i) => {
+    if (end) return;
+    const k = busKey(name);
+    if (!map.has(k)) map.set(k, { key: k, routes: [], idx: {} });
+    const s = map.get(k);
+    if (!s.routes.includes(r.no)) s.routes.push(r.no);
+    if (s.idx[r.no] == null) s.idx[r.no] = i;
+  }));
+  return [...map.values()];
+}
+function busTimeTable(times, caption, now) {
+  const byHour = {};
+  times.forEach(t => (byHour[Math.floor(t / 60)] ||= []).push(t % 60));
+  return el('table', { class: 'tbl bus-tbl' },
+    el('caption', {}, caption),
+    el('thead', {}, el('tr', {}, el('th', { scope: 'col' }, '시'), el('th', { scope: 'col' }, '버스가 오는 분'))),
+    el('tbody', {}, Object.entries(byHour).map(([h, mins]) => {
+      const cur = now && +h === now.getHours();
+      return el('tr', { class: cur ? 'now' : '' },
+        el('th', { scope: 'row' }, `${pad2(h)}시`, cur ? el('span', { class: 'now-tag' }, '지금') : null),
+        el('td', {}, mins.map(m => el('span', { class: 'bus-min' }, pad2(m) + '분'))));
+    })));
+}
+// 정류장을 고른 뒤 보이는 화면: 그 정류장에 서는 노선별 도착 시각표
+function busStopResult(key) {
+  const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes(), weekday = now.getDay() >= 1 && now.getDay() <= 5;
+  const cards = BUS_ROUTES.map(r => {
+    const passes = BUS_TT[r.no].rows.filter(([n, , end]) => !end && busKey(n) === key);
+    if (!passes.length) return null;
+    const starts = busDepartures(r);
+    const all = passes.flatMap(([, off], pi) => starts.map(s => ({ t: s + off, pi })));
+    const next = weekday ? all.filter(x => x.t >= nowMin).sort((a, b) => a.t - b.t)[0] : null;
+    const dirName = pi => (passes.length > 1 ? (pi === 0 ? '가는 방향' : '돌아오는 방향') : '');
+    const nextText = !weekday ? '오늘은 주말이라 운행하지 않아요. 평일(월~금)에 운행해요.'
+      : next ? `지금 시각 기준 다음 도착(예상): ${hhmm(next.t)} · ${untilText(next.t - nowMin)}${passes.length > 1 ? ` (${dirName(next.pi)})` : ''}`
+      : '오늘 막차 시간이 지났어요. 다음 운행일 첫차 시간표는 아래에서 확인하세요.';
+    return el('div', { class: 'bus-panel ' + r.cls },
+      el('h3', { class: 'bus-title' }, `${r.no}노선 (${r.color})`),
+      el('p', { class: 'bus-area' }, '다니는 곳: ' + r.area),
+      el('div', { class: 'bus-next', role: 'status' }, nextText),
+      ...passes.map(([name, off], pi) => {
+        const times = starts.map(s => s + off);
+        return el('div', {},
+          passes.length > 1 ? el('p', { class: 'bus-sub' }, `${dirName(pi)} 정류장`) : null,
+          name !== key ? small('정류장 표지에 적힌 이름: ' + name) : null,
+          busTimeTable(times, `${r.no}노선 ${key} 도착 예상 시각${passes.length > 1 ? ' · ' + dirName(pi) : ''} (평일, 첫차 ${hhmm(times[0])} · 막차 ${hhmm(times[times.length - 1])})`, weekday ? now : null));
+      }));
+  }).filter(Boolean);
+  return [
+    el('h2', {}, key),
+    el('div', { class: 'bus-quick' }, `🚌 이 정류장에는 ${cards.length}개 노선이 서요. 월~금요일만 다니고(토·일·공휴일 쉼), 요금은 무료예요.`),
+    ...cards,
+    small('시각은 구청 운행시간표(출발 후 몇 분 뒤 도착)로 맞춘 예상이에요. 길이 막히면 늦어질 수 있으니 조금 일찍 나가 주세요. 정류장 표지판과 "성공버스" 앱에서도 확인할 수 있어요.'),
+    btn('🚌  다른 정류장 고르기', () => go('bus', { busStop: null })),
+    el('details', { class: 'bus-stops' },
+      el('summary', {}, '구청 공식 운행시간표 보기'),
+      ...BUS_ROUTES.map(r => el('a', { class: 'choice secondary', href: `https://www.sd.go.kr/main/contents.do?key=${BUS_TT[r.no].page}`, target: '_blank', rel: 'noopener noreferrer' }, `${r.no}노선 (${r.color}) 시간표 ↗`)))
+  ];
+}
+// 처음 보이는 화면: 어디서 타는지 고르기 (이름으로 찾기 + 노선으로 좁히기)
+function busPickerScreen() {
+  const stops = busStops();
+  let routeFilter = 0, query = '';
+  const norm = s => s.replace(/\s+/g, '');
+  const search = el('input', { type: 'search', id: 'bus-q', placeholder: '정류장 이름 쓰기 (예: 성동구청)', autocomplete: 'off' });
+  const chips = el('div', { class: 'bus-chips', role: 'group', 'aria-label': '노선으로 좁혀 보기' });
+  const count = el('p', { class: 'small', role: 'status' });
+  const list = el('div', { class: 'stop-list' });
+  const draw = () => {
+    const q = norm(query);
+    const shown = stops.filter(s => (!routeFilter || s.routes.includes(routeFilter)) && (!q || norm(s.key).includes(q)))
+      .sort((a, b) => (routeFilter ? a.idx[routeFilter] - b.idx[routeFilter] : a.key.localeCompare(b.key, 'ko')));
+    count.textContent = shown.length ? `정류장 ${shown.length}곳${routeFilter ? ' (다니는 순서대로)' : ''}` : '찾는 정류장이 없어요. 글자를 줄여서 다시 써 보세요.';
+    list.replaceChildren(...shown.map(s => el('button', { type: 'button', class: 'stop-btn', onclick: () => go('bus', { busStop: s.key }) },
+      el('span', {}, s.key),
+      el('span', { class: 'stop-rt' }, ...s.routes.map(n => el('span', { class: 'rt r' + n }, n + '노선'))))));
+  };
+  const setRoute = n => {
+    routeFilter = n;
+    [...chips.children].forEach((b, i) => { b.classList.toggle('on', i === n); b.setAttribute('aria-pressed', String(i === n)); });
+    draw();
+  };
+  [['전체', 0], ...BUS_ROUTES.map(r => [`${r.no}노선 ${r.color}`, r.no])].forEach(([label, n]) =>
+    chips.append(el('button', { type: 'button', class: 'chip' + (n ? ' r' + n : ''), 'aria-pressed': 'false', onclick: () => setRoute(n) }, label)));
+  search.addEventListener('input', () => { query = search.value; draw(); });
+  setRoute(0);
+  return [
+    el('h2', {}, '성공버스 시간표'),
+    bubble('어디서 타실지 고르면, 그 정류장에 버스가 오는 시각이 나와요. 성공버스는 성동구 공공시설을 도는 무료 셔틀버스이고, 누구나 탈 수 있어요. 월~금요일만 다녀요.'),
+    el('div', { class: 'fld' }, el('label', { for: 'bus-q' }, '어디서 타세요?'), search),
+    el('p', { class: 'small' }, '노선(색깔)을 눌러서 좁혀 볼 수도 있어요.'),
+    chips, count, list,
+    el('div', { style: 'height:14px' }),
+    btn('성공버스 이용 방법 자세히 보기', () => go('detail', { detail: verifiedServices.find(s => s.id === 'v-seonggong-bus') || SEONGGONG_BUS }), true)
   ];
 }
 
@@ -1119,6 +1257,8 @@ const screens = {
   }
 };
 
+screens.bus = () => (state.busStop ? busStopResult(state.busStop) : busPickerScreen());
+
 function render() {
   $main.replaceChildren(...screens[state.screen]().filter(Boolean));
   const home = state.screen === 'home';
@@ -1136,6 +1276,9 @@ fontBtn.addEventListener('click', () => {
   document.documentElement.style.setProperty('--scale', scale);
   fontBtn.setAttribute('aria-label', `글자 크기 변경 (현재 ${Math.round(scale * 100)}%)`);
 });
+
+/* ---------- 성공버스 시간표 보기 (머리글 버튼) ---------- */
+document.getElementById('busBtn').addEventListener('click', () => { setSiteMenu(false); go('bus', { busStop: null }); });
 
 /* ---------- 복지사이트 메뉴 ---------- */
 const siteBtn = document.getElementById('siteBtn');
