@@ -781,6 +781,7 @@ function busSchedule() {
 // 복지관 식당(경로식당): 시립성동노인종합복지관 경로식당 안내(sdsenior.or.kr co_id=SDS_306002)와 구청 복지관 시설 안내(key=1445·1446·1447, 층 위치)로 2026-11-06 확인.
 //   성동종합·성수·옥수는 층 위치만 확인되고 운영 시간·요금은 누리집에 없어서 "전화로 확인"으로 적었습니다.
 // 구청 안내에는 밑반찬을 하는 복지관 이름 목록이 없어서, 복지관별로 확인된 내용만 적고 확인 못 한 곳은 전화 확인으로 표시했습니다.
+const SIDE_DISH_URL = 'https://sd.go.kr/main/contents.do?key=5235';
 function sideDishResult() {
   const dial = n => 'tel:' + n.replace(/[^0-9]/g, '');
   const tel = (num, label, shown) => el('a', { class: 'choice', href: dial(num) }, `📞  ${label}  ${shown || num}`);
@@ -798,8 +799,16 @@ function sideDishResult() {
   const extLink = (href, label) => el('a', { class: 'choice secondary', href, target: '_blank', rel: 'noopener noreferrer' }, label);
   const h3s = (t, top) => el('h2', { style: `font-size:1.15rem;margin-top:${top || 22}px` }, t);
   return [
-    el('h2', {}, '식당과 밑반찬 서비스를 진행하고 있는 복지관이 있어요!'),
-    h3s('밑반찬 활동이 확인된 복지관', 8),
+    el('h2', {}, '밑반찬과 식당 이용 서비스가 있어요'),
+    bubble('식사를 준비하기 어려우실 때, 성동구에는 밑반찬을 집으로 가져다주는 서비스가 있어요. 밑반찬을 하는 복지관과 복지관 식당 정보, 신청 방법을 알려 드릴게요.'),
+    el('div', { class: 'card' },
+      el('h3', {}, '성동구 저소득어르신 급식 지원 (밑반찬·도시락 배달)'),
+      prog('받을 수 있는 분: 끼니를 거를 걱정이 있는 만 65세 이상 저소득 어르신이에요'),
+      prog('거동이 불편하시면 도시락·밑반찬을 주 7일 집으로 배달해요 (주말 몫은 전날 간편식으로 드려요). 거동이 가능하시면 사시는 곳을 맡은 복지관 경로식당에서 주 6일 식사해요'),
+      prog('신청: 본인이나 동 주민센터가 신청하면 → 선정 조사 → 구청이 심의·결정 → 복지관이 서비스를 해요'),
+      prog('어느 복지관이 맡는지는 사시는 곳에 따라 정해져요. 소득 기준은 구청 안내에 없어서 전화로 확인해 주세요'),
+      tel('02-2286-5830', '구청 어르신복지과 문의')),
+    h3s('밑반찬 활동이 확인된 복지관'),
     small('복지관 누리집, 공고, 기사로 확인한 내용이에요. 대상과 신청 방법은 복지관마다 다르니 전화로 한 번 더 물어보세요.'),
     el('div', { style: 'height:10px' }),
     centerCard('f-seongdong', [
@@ -843,6 +852,8 @@ function sideDishResult() {
       prog('소득이 낮은 1인가구 중증장애인께 자원봉사자가 반찬을 만들어 집으로 가져다줘요'),
       prog('신청 방법은 구청 안내에 없어서 전화로 물어봐 주세요'),
       tel('02-2286-5445', '장애인복지과 문의')),
+    small('2026년 11월 6일 확인한 내용이에요. 지원 대상과 방법은 바뀔 수 있고, 이 사이트는 자격을 판정하지 않아요.'),
+    el('a', { class: 'choice secondary', href: SIDE_DISH_URL, target: '_blank', rel: 'noopener noreferrer' }, '성동구청 식사지원 공식 안내 보기 ↗'),
     btn('📚  다른 도움도 찾아보기', () => go('topics')),
     btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
   ];
