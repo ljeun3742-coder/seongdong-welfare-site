@@ -261,9 +261,9 @@ const ageGroups = [
 const questions = {
   crisis: [{ prompt: '어떤 일이 있으셨나요? 가장 가까운 것을 골라 주세요.', choices: ['일자리나 소득이 갑자기 끊겼어요', '크게 아프거나 다쳤어요', '가족 문제나 폭력으로 힘들어요', '화재 등으로 집에서 지내기 어려워요', '마음이 너무 힘들어요'] }],
   money: [{ prompt: '어떤 경제적 어려움이 가장 크신가요?', choices: ['생활비가 부족해요', '주거비가 부담돼요', '어떤 지원이 있는지 궁금해요'] }],
-  food: [{ prompt: '어떤 점이 가장 불편하신가요?', choices: ['식사를 준비하기 어려워요', '청소나 집안일이 어려워요', '둘 다 어려워요'] }, { prompt: '일상생활에서 도움이 필요하신가요?', choices: ['자주 필요해요', '가끔 필요해요', '잘 모르겠어요'] }],
+  food: [{ prompt: '어떤 점이 가장 불편하신가요?', choices: ['식사를 준비하기 어려워요', '청소나 집안일이 어려워요', '둘 다 어려워요'] }],
   mobility: [{ prompt: '언제 이동이 가장 어려우신가요?', choices: ['병원에 갈 때', '복지관이나 외부활동을 할 때', '외출 자체가 어려워요'] }],
-  lonely: [{ prompt: '어떤 활동이 가장 편하실까요?', choices: ['소규모 모임에 참여하고 싶어요', '누군가와 이야기하고 싶어요', '집에서 참여할 수 있는 활동이 좋아요'] }],
+  lonely: [{ prompt: '어떤 활동이 가장 편하실까요?', choices: ['소규모 모임에 참여하고 싶어요', '누군가와 이야기하고 싶어요', '혼자서 쉬고 싶어요'] }],
   center: [{ prompt: '복지관에서 무엇이 가장 궁금하세요?', choices: ['어디에 있는지', '어떤 프로그램이 있는지', '처음 이용하는 방법'] }],
   unknown: [{ prompt: '요즘 가장 신경 쓰이는 일은 무엇인가요?', choices: ['생활비', '집안일이나 이동', '외로움이나 관계', '아직 잘 모르겠어요'] }, { prompt: '어떤 방식으로 도움을 알아볼까요?', choices: ['관련 서비스 모두 보기', '복지관 정보 보기', '국가 복지제도 알아보기'] }]
 };
@@ -687,6 +687,93 @@ function consultForm() {
 }
 
 /* ---------- 화면 ---------- */
+/* ---------- 성공버스 시간표 ---------- */
+// 출처: 성동구청 성공버스 안내(key=5108, 페이지 최종수정 2026-03-10, 2026-11-05 확인).
+// 구청 페이지에는 정류장별 출발 시각표가 없고 운행 시간대·배차 간격·정류장 순서만 있습니다.
+// 그래서 기점 출발 시각은 "첫차 + 배차 간격"으로 계산한 예상 시각입니다(네 노선 모두 첫차~막차 출발이 배차 간격으로 나누어떨어지고,
+// 막차 출발 + 1회 운행 시간 = 공식 운행 종료 시각과 일치함을 확인). 길이 막히면 늦어질 수 있어 앱·정류장 표지판 확인을 안내합니다.
+const BUS_ROUTES = [
+  { no: 1, color: '파랑', cls: 'r1', area: '성수–성동구청–응봉–신금호', start: '서울숲복합문화체육센터', first: '07:30', last: '18:33', arrive: '19:38', gap: 17, ride: 65, stops: [
+    ['서울숲복합문화체육센터'], ['성동50플러스센터(한양대앞)', '3노선 환승'], ['성동구청(왕십리역 4번출구)', '2·3노선 환승'], ['성동청소년센터(성동우체국)'],
+    ['행당제1동 주민센터(무학여고)'], ['응봉동 주민센터'], ['금호동1가 공영주차장(금호벽산하이피아 상가)'], ['성동아이사랑복합문화센터(금호고)'],
+    ['금호2·3가동 주민센터'], ['금호1가동 주민센터'], ['성동구립 금호도서관'], ['금호동1가 공영주차장(성동행당새마을금고)'],
+    ['응봉동 주민센터'], ['행당제1동 주민센터'], ['성동구청(왕십리역 6-1번출구)', '2·4노선 환승'], ['성동50플러스센터(한양대앞)', '3노선 환승'],
+    ['서울숲복합문화체육센터(서울숲아이파크리버포레 1차)'], ['성수문화복지회관(뚝섬역 8번출구)'], ['성동지역경제혁신센터(뚝섬역 5번출구)'], ['성수역 스마트도서관'],
+    ['성수2가제1동 주민센터'], ['성수1가제1동 주민센터'], ['언더스탠드에비뉴(서울숲역 2번출구)'], ['성수1가제2동 주민센터']] },
+  { no: 2, color: '분홍', cls: 'r2', area: '용답–마장–사근–성동구청–상왕십리–보건소', start: '성동구립 용답체육센터', first: '07:20', last: '18:20', arrive: '19:20', gap: 20, ride: 60, stops: [
+    ['성동구립 용답체육센터'], ['용답동 노인복지관'], ['용답 창업보육실'], ['용답동 주민센터'], ['성동구립 용답도서관(답십리역 2번출구)'], ['용답휴식공원(신답역)'],
+    ['시립성동노인종합복지관'], ['마장동 주민센터'], ['사근동 마을활력소'], ['사근동 주민센터'], ['성동50플러스센터(한양시장)'], ['성동구청(왕십리역 4번출구)', '1·3노선 환승'],
+    ['상왕십리역 스마트도서관'], ['왕십리도서관'], ['왕십리도선동 주민센터'], ['꽃재어린이공원'], ['성동구보건소'], ['성동구청(왕십리역 6-1번출구)', '1·4노선 환승'],
+    ['성동50플러스센터(한양시장)'], ['사근동주민센터'], ['사근동 마을활력소'], ['마장동주민센터'], ['용답휴식공원(신답역)'], ['성동구립 용답도서관(답십리역 5번출구)'],
+    ['용답동 주민센터'], ['용답 창업보육실'], ['용답동 노인복지관']] },
+  { no: 3, color: '노랑', cls: 'r3', area: '송정–성동구청', start: '송정동 공공복합청사', first: '08:00', last: '18:50', arrive: '19:25', gap: 50, ride: 35, stops: [
+    ['송정동 공공복합청사'], ['송정 스마트헬스케어센터'], ['송정제방길 어린이상상마당(성동세무서)'], ['성수2가제3동주민센터(금호베스트빌아파트)'], ['성동안심상가'],
+    ['서울숲복합문화체육센터(한양대 방면)'], ['성동50플러스센터(한양대앞)', '1노선 환승'], ['성동구청(왕십리역 4번출구)', '1·2노선 환승'], ['소월아트홀'],
+    ['성동50플러스센터(한양대앞)', '1노선 환승'], ['서울숲복합문화체육센터(성동세무서 방면)'], ['성동안심상가'], ['성수2가제3동주민센터'],
+    ['송정제방길 어린이상상마당(성동세무서)'], ['송정 스마트헬스케어센터']] },
+  { no: 4, color: '보라', cls: 'r4', area: '성동구청–옥수', start: '성동구청(왕십리역 6-1번출구)', first: '08:00', last: '19:00', arrive: '19:45', gap: 60, ride: 45, stops: [
+    ['성동구청(왕십리역 6-1번출구)', '1·2노선 환승'], ['행당제2동 주민센터'], ['성동아이사랑복합문화센터'], ['금호4가동 주민센터'], ['옥수동 주민센터'], ['매봉산유아숲체험원'],
+    ['옥수동 주민센터'], ['금호4가동 주민센터'], ['성동아이사랑복합문화센터'], ['행당제2동 주민센터'], ['행당제1동 주민센터'], ['성동구청(왕십리민자역사)']] }
+];
+const toMin = t => +t.slice(0, 2) * 60 + +t.slice(3); // pad2 는 위쪽(행사 일정)에 이미 있습니다
+const hhmm =m => pad2(Math.floor(m / 60)) + ':' + pad2(m % 60);
+const untilText = d => (d <= 0 ? '곧 출발해요' : d < 60 ? `${d}분 뒤` : `${Math.floor(d / 60)}시간 ${d % 60}분 뒤`);
+function busDepartures(r) {
+  const out = [];
+  for (let m = toMin(r.first); m <= toMin(r.last); m += r.gap) out.push(m);
+  return out;
+}
+function busRoutePanel(r) {
+  const deps = busDepartures(r);
+  const byHour = {};
+  deps.forEach(m => (byHour[Math.floor(m / 60)] ||= []).push(m % 60));
+  const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes(), weekday = now.getDay() >= 1 && now.getDay() <= 5;
+  const nextDep = deps.find(m => m >= nowMin);
+  const nextText = !weekday ? '오늘은 주말이라 운행하지 않아요. 평일(월~금)에 운행해요.'
+    : nextDep == null ? `오늘 막차 시간이 지났어요. 다음 운행일 첫차는 ${r.first}에 출발해요.`
+    : `지금 시각 기준 다음 출발(예상): ${hhmm(nextDep)} · ${untilText(nextDep - nowMin)}`;
+  return [
+    el('h3', { class: 'bus-title' }, `${r.no}노선 (${r.color})`),
+    el('p', { class: 'bus-area' }, '다니는 곳: ' + r.area),
+    el('div', { class: 'bus-next', role: 'status' }, nextText),
+    el('dl', { class: 'bus-facts' },
+      el('div', {}, el('dt', {}, '출발하는 곳'), el('dd', {}, r.start)),
+      el('div', {}, el('dt', {}, '첫차'), el('dd', {}, `${r.first} 출발`)),
+      el('div', {}, el('dt', {}, '막차'), el('dd', {}, `${r.last} 출발 (종점 ${r.arrive} 도착)`)),
+      el('div', {}, el('dt', {}, '배차 간격'), el('dd', {}, `${r.gap}분마다`)),
+      el('div', {}, el('dt', {}, '한 바퀴'), el('dd', {}, `약 ${r.ride}분`))),
+    el('table', { class: 'tbl bus-tbl' },
+      el('caption', {}, `${r.no}노선 ${r.start} 출발 예상 시각 (평일)`),
+      el('thead', {}, el('tr', {}, el('th', { scope: 'col' }, '시'), el('th', { scope: 'col' }, '출발하는 분'))),
+      el('tbody', {}, Object.entries(byHour).map(([h, mins]) => {
+        const cur = weekday && +h === now.getHours();
+        return el('tr', { class: cur ? 'now' : '' },
+          el('th', { scope: 'row' }, `${pad2(h)}시`, cur ? el('span', { class: 'now-tag' }, '지금') : null),
+          el('td', {}, mins.map(m => el('span', { class: 'bus-min' }, pad2(m) + '분'))));
+      }))),
+    small('출발 시각은 구청이 알려 준 첫차·막차·배차 간격으로 계산한 예상이에요. 길이 막히면 늦어질 수 있어요. 정류장마다 도착하는 시각은 "성공버스" 앱이나 정류장 표지판에서 확인해 주세요.'),
+    el('details', { class: 'bus-stops' },
+      el('summary', {}, `정류장 순서 보기 (${r.stops.length}곳)`),
+      el('ol', {}, r.stops.map(([name, xfer]) => el('li', {}, name, xfer ? el('span', { class: 'xfer' }, xfer) : null))))
+  ];
+}
+function busSchedule() {
+  const panel = el('div', { class: 'bus-panel', role: 'tabpanel', id: 'bus-panel' });
+  const tabs = el('div', { class: 'bus-tabs', role: 'tablist', 'aria-label': '성공버스 노선 고르기' });
+  const show = r => {
+    [...tabs.children].forEach((b, i) => { const on = BUS_ROUTES[i] === r; b.setAttribute('aria-selected', String(on)); b.classList.toggle('on', on); });
+    panel.className = 'bus-panel ' + r.cls;
+    panel.replaceChildren(...busRoutePanel(r));
+  };
+  BUS_ROUTES.forEach(r => tabs.append(el('button', { type: 'button', role: 'tab', class: 'bus-tab ' + r.cls, 'aria-selected': 'false', 'aria-controls': 'bus-panel', onclick: () => show(r) },
+    el('span', { class: 'bus-chip', 'aria-hidden': 'true' }), `${r.no}노선 · ${r.color}`)));
+  show(BUS_ROUTES[0]);
+  return el('section', { class: 'bus' },
+    el('div', { class: 'bus-quick' }, '🚌 월~금요일만 다녀요 (토·일·공휴일 쉼) · 요금 무료 · 휴대폰 앱의 QR 탑승권으로 타요 (만 65세 이상은 신분증)'),
+    el('h3', { class: 'bus-pick' }, '타려는 노선을 골라 주세요'),
+    tabs, panel);
+}
+
 const screens = {
   home() {
     return [
@@ -706,7 +793,8 @@ const screens = {
   topics() {
     return [
       small('첫 번째 질문'),
-      el('h2', {}, '어떤 도움이 필요하신가요?'),
+      el('h2', {}, '어떤 복지정보가 필요하신가요?'),
+      bubble(['아래에 2개의 질문을 통해 복지정보를 쉽게 알아볼 수 있어요! 복지관 상담을 원하시면 ', el('strong', { class: 'em' }, '❔ 어떤 도움을 받을 수 있는지 모르겠어요'), ' 눌러주세요!']),
       ...categories.map(c => btn(categoryLabel(c), () => c.id === 'unknown'
           ? go('results', { category: c.id, step: 0, answers: [] }) // 모르겠다면 질문 없이 바로 복지정보와 상담 안내
           : go('questions', { category: c.id, step: 0, answers: [] }),
@@ -818,17 +906,31 @@ const screens = {
       // 이야기 나눌 사람을 원하면 마음 상담 기관을 맨 앞에 보여줍니다.
       const order = ['f-itda', 'f-single', 'f-seongdong', 'f-seongsu', 'f-oksu', 'f-mental'];
       if (state.answers[0]?.includes('이야기')) order.unshift(order.splice(order.indexOf('f-mental'), 1)[0]);
+      // "혼자서 쉬고 싶어요"를 고르면 서울잇다플레이스를 맨 위에 자세히 소개합니다 (DB에 아직 없으면 기존 목록을 그대로 보여 줍니다)
+      const itda = facilities.find(f => f.id === 'f-itda');
+      const alone = !!(state.answers[0]?.includes('혼자서') && itda && lonelyPrograms[itda.id]);
+      const lonelyCard = (f, intro) => el('div', { class: 'card' },
+        el('h3', {}, f.name),
+        intro ? el('p', {}, f.summary) : null,
+        ...lonelyPrograms[f.id].map(t => el('p', { class: 'prog' }, '• ' + t)),
+        el('p', { class: 'small' }, '📍 ' + f.address),
+        intro && f.hours ? el('p', { class: 'small' }, '🕘 ' + f.hours) : null,
+        el('a', { class: 'choice', href: telHref(f) }, `📞  ${f.name}에 전화하기  ${f.phone.split(' (')[0]}`),
+        btn('자세히 보기', () => go('detail', { detail: f }), true));
+      const others = order.filter(id => !(alone && id === 'f-itda')).map(id => facilities.find(f => f.id === id)).filter(f => f && lonelyPrograms[f.id]);
       return [
-        el('h2', {}, '우리 복지관에 연락주세요'),
-        small('혼자라고 느껴질 때 함께할 수 있는 프로그램이에요. 마음이 가는 곳에 전화로 편하게 물어보세요. 기관 공식 안내로 확인한 내용이며, 대상과 모집 시기는 바뀔 수 있어요.'),
+        ...(alone ? [
+          el('h2', {}, '잇다플레이스는 어떠세요?'),
+          bubble('혼자서 쉬고 싶은 날, 서울시복지재단 고립예방센터가 운영하는 "서울잇다플레이스"를 소개해요.'),
+          lonelyCard(itda, true),
+          el('h2', { style: 'font-size:1.15rem;margin-top:22px' }, '다른 곳도 알아보세요'),
+          small('마음이 가는 곳에 전화로 편하게 물어보세요. 기관 공식 안내로 확인한 내용이며, 대상과 모집 시기는 바뀔 수 있어요.')
+        ] : [
+          el('h2', {}, '우리 복지관에 연락주세요'),
+          small('혼자라고 느껴질 때 함께할 수 있는 프로그램이에요. 마음이 가는 곳에 전화로 편하게 물어보세요. 기관 공식 안내로 확인한 내용이며, 대상과 모집 시기는 바뀔 수 있어요.')
+        ]),
         el('div', { style: 'height:14px' }),
-        ...order.map(id => facilities.find(f => f.id === id)).filter(f => f && lonelyPrograms[f.id]).map(f =>
-          el('div', { class: 'card' },
-            el('h3', {}, f.name),
-            ...lonelyPrograms[f.id].map(t => el('p', { class: 'prog' }, '• ' + t)),
-            el('p', { class: 'small' }, '📍 ' + f.address),
-            el('a', { class: 'choice', href: telHref(f) }, `📞  ${f.name}에 전화하기  ${f.phone.split(' (')[0]}`),
-            btn('자세히 보기', () => go('detail', { detail: f }), true))),
+        ...others.map(f => lonelyCard(f, false)),
         el('a', { class: 'choice secondary', href: 'tel:15770199' }, '💙  마음이 너무 힘들 땐 정신건강 위기상담 1577-0199 (24시간)'),
         btn('📚  다른 도움도 찾아보기', () => go('topics')),
         btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
@@ -854,7 +956,8 @@ const screens = {
   detail() {
     const d = state.detail;
     const v = !!d.verified;
-    const table = d.table && el('table', { class: 'tbl' },
+    const isBus = d.id === 'v-seonggong-bus'; // 성공버스는 노선별 시간표 화면을 따로 보여 줍니다
+    const table = isBus ? null : d.table && el('table', { class: 'tbl' },
       el('thead', {}, el('tr', {}, d.table.head.map(h => el('th', { scope: 'col' }, h)))),
       el('tbody', {}, d.table.rows.map(r => el('tr', {}, r.map(c => el('td', {}, c))))));
     if (d.facility) {
@@ -881,6 +984,7 @@ const screens = {
       el('div', { class: 'warn' }, d.note ? d.note : v
         ? '2026년 기준 보건복지부 공식 자료로 확인한 내용입니다. 소득 기준은 매년 바뀌며, 실제 수급 여부는 소득인정액(소득·재산) 조사 후 결정됩니다. 이 사이트는 자격을 판정하지 않습니다.'
         : '⚠️ 검증 전 예시 데이터 — 실제 서비스·지원 조건으로 사용하지 마세요.'),
+      isBus ? busSchedule() : null,
       el('dl', { class: 'info' }, rows.map(([k, val]) => el('div', {}, el('dt', {}, k), el('dd', {}, val)))),
       d.applyUrl ? el('a', { class: 'choice', href: d.applyUrl, target: '_blank', rel: 'noopener noreferrer' }, '신청 안내 페이지 열기 ↗') : null,
       el('a', { class: d.applyUrl ? 'choice secondary' : 'choice', href: d.sourceUrl, target: '_blank', rel: 'noopener noreferrer' }, '공식 자료에서 확인하기 ↗'),

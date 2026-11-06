@@ -72,6 +72,7 @@ a.choice { text-decoration: none; }
 .sos-icon { display: inline-block; width: 1.8em; height: 1.8em; vertical-align: -0.5em; margin: -0.2em 0; }
 .sos-icon svg { display: block; width: 100%; height: 100%; }
 
+.em { font-weight: 800; color: var(--accent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .bubble { padding: 18px 20px; background: var(--peach); border: 1px solid var(--accent-soft); border-radius: 18px; margin-bottom: 20px; }
 .card { background: #fff; border: 1px solid var(--border); border-radius: 17px; padding: 19px; margin-bottom: 13px; }
 button.card { display: block; width: 100%; text-align: left; color: inherit; }
@@ -94,6 +95,37 @@ dl.info dd { margin: 0; }
 .fld label { display: block; font-weight: 800; margin-bottom: 6px; }
 .fld input, .fld select { width: 100%; min-height: 52px; padding: 10px 14px; font: inherit; color: var(--ink); background: #fff; border: 1.5px solid #CDB7AB; border-radius: 12px; }
 .fld input:focus, .fld select:focus { border-color: var(--accent); }
+/* 성공버스 시간표 */
+.bus-quick { background: var(--peach); border: 1px solid var(--accent-soft); border-radius: 12px; padding: 12px 14px; font-weight: 700; line-height: 1.55; }
+.bus-pick { font-size: 1.1rem; margin: 18px 0 8px; }
+.bus-tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.bus-tab { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px 12px; background: #fff; border: 2.5px solid var(--border); border-radius: 14px; color: var(--ink); font-weight: 800; font-size: 1.05rem; text-align: left; }
+.bus-tab.on { border-color: var(--rc); background: var(--rcbg); }
+.bus-tab.on::after { content: '✓'; margin-left: auto; font-size: 1.2rem; }
+.bus-chip { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--rc); border: 2px solid rgba(0, 0, 0, .2); }
+.r1 { --rc: #1B5FAA; --rcbg: #E8F1FB; }
+.r2 { --rc: #D6336C; --rcbg: #FCE9F0; }
+.r3 { --rc: #F2B705; --rcbg: #FFF6D6; }
+.r4 { --rc: #7048E8; --rcbg: #EFE9FD; }
+.bus-panel { margin-top: 14px; padding: 14px; background: #fff; border: 2.5px solid var(--rc); border-radius: 14px; }
+.bus-title { margin: 0 0 4px; font-size: 1.3rem; }
+.bus-area { margin: 0 0 10px; color: var(--muted); }
+.bus-next { background: var(--rcbg); border-left: 6px solid var(--rc); border-radius: 10px; padding: 12px 14px; font-weight: 800; margin: 10px 0 14px; }
+.bus-facts { margin: 0 0 14px; }
+.bus-facts div { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.bus-facts dt { flex: none; width: 5.5em; font-weight: 800; }
+.bus-facts dd { margin: 0; }
+.bus-tbl caption { text-align: left; font-weight: 800; padding-bottom: 6px; }
+.bus-tbl th[scope="row"] { width: 5.2em; white-space: nowrap; font-size: 1rem; }
+.bus-tbl td { font-size: 1.05rem; }
+.bus-tbl tr.now th, .bus-tbl tr.now td { background: #FFF3C4; }
+.now-tag { display: block; font-size: .75rem; color: var(--accent); }
+.bus-min { display: inline-block; min-width: 2.7em; margin: 2px 8px 2px 0; font-weight: 700; }
+.bus-stops { margin-top: 14px; }
+.bus-stops summary { min-height: 48px; padding: 12px 0; font-weight: 800; cursor: pointer; }
+.bus-stops ol { margin: 0; padding-left: 1.8em; }
+.bus-stops li { padding: 4px 0; }
+.xfer { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 999px; background: var(--peach); color: var(--accent); font-size: .8rem; font-weight: 700; }
 .voice-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .voice-btn { min-height: 48px; padding: 10px 14px; background: var(--peach); border: 1.5px solid var(--accent-soft); border-radius: 12px; color: var(--accent); font-weight: 700; font-size: .95rem; }
 .voice-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
