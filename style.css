@@ -50,12 +50,13 @@ button { font: inherit; cursor: pointer; }
 .site-panel a:hover, .site-panel a:focus-visible { background: var(--peach); }
 @media (max-width: 420px) {
   .brand { font-size: 1rem; }
-  .font-btn { padding: 8px 9px; font-size: .82rem; }
-  .top-actions { gap: 5px; }
-}
-@media (max-width: 380px) { /* 아주 좁은 폰: 버튼 세 개가 한 줄에 들어가도록 */
   .font-btn { padding: 8px 6px; font-size: .78rem; }
   .top-actions { gap: 4px; }
+  .top { padding-left: 8px; padding-right: 8px; }
+}
+@media (max-width: 380px) { /* 아주 좁은 폰: 버튼 네 개가 한 줄에 들어가도록 */
+  .font-btn { padding: 8px 4px; font-size: .72rem; }
+  .top-actions { gap: 3px; }
 }
 
 .demo-banner {
@@ -136,6 +137,13 @@ dl.info dd { margin: 0; }
 .bus-stops ol { margin: 0; padding-left: 1.8em; }
 .bus-stops li { padding: 4px 0; }
 .xfer { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 999px; background: var(--peach); color: var(--accent); font-size: .8rem; font-weight: 700; }
+/* 읽어주기 */
+.font-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.read-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; padding: 10px 12px; background: #EAF3FF; border: 1.5px solid #9CC2EE; border-radius: 12px; color: #1B4F8A; }
+.read-bar .voice-btn { background: #fff; border-color: #9CC2EE; color: #1B4F8A; }
+.read-msg { flex-basis: 100%; margin: 0; }
+@media (max-width: 420px) { .hide-sm { display: none; } }
+
 /* 성공버스: 타는 곳 고르기 */
 .bus-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
 .chip { min-height: 48px; padding: 8px 14px; background: #fff; border: 2.5px solid var(--border); border-radius: 999px; color: var(--ink); font-weight: 800; font-size: .95rem; }

@@ -281,6 +281,7 @@ const keywordMap = [
 /* ---------- 상태 ---------- */
 const state = { screen: 'home', group: 'daily', category: 'unknown', step: 0, answers: [], detail: null, age: null, busStop: null };
 const history = []; // 이전 화면 스택
+let readOn = false; // 읽어주기(머리글 버튼)가 켜져 있는지
 
 const $main = document.getElementById('main');
 const $banner = document.getElementById('demoBanner');
@@ -1259,8 +1260,88 @@ const screens = {
 
 screens.bus = () => (state.busStop ? busStopResult(state.busStop) : busPickerScreen());
 
+/* ---------- 읽어주기: 켜 두면 화면이 바뀔 때마다 내용을 소리로 읽어 줍니다 (브라우저 내장 음성) ---------- */
+// 화면 글자를 덩어리로 모아 읽습니다. 버튼·입력칸·정류장 목록은 건너뛰고, 성공버스 시간표는 표 제목(첫차·막차)만 읽어요.
+let readTimer = null;
+const readQueue = []; // 읽는 도중 브라우저가 낭독 객체를 지우지 않도록 붙잡아 둡니다
+function screenChunks() {
+  const chunks = [];
+  let buf = [];
+  const flush = () => { const t = buf.join(' ').replace(/\s+/g, ' ').trim(); if (t) chunks.push(t); buf = []; };
+  const BLOCK = ['DIV', 'P', 'H1', 'H2', 'H3', 'LI', 'TR', 'DT', 'DD', 'SECTION', 'TABLE', 'CAPTION', 'LABEL', 'SUMMARY', 'DL', 'OL', 'UL', 'BUTTON', 'A', 'FORM', 'DETAILS'];
+  const SKIP = ['SCRIPT', 'STYLE', 'SELECT', 'OPTION', 'INPUT', 'TEXTAREA', 'svg', 'SVG'];
+  const walk = n => {
+    if (n.nodeType === 3) { buf.push(n.textContent); return; }
+    if (n.nodeType !== 1) return;
+    const tag = n.tagName, cl = n.classList;
+    if (SKIP.includes(tag) || n.hidden || n.getAttribute('aria-hidden') === 'true' || ['read-bar', 'voice', 'hp', 'more', 'now-tag'].some(c => cl.contains(c))) return;
+    if (n.getAttribute('role') === 'img') return;               // 캐릭터 그림
+    if (tag === 'BUTTON' && n.parentElement !== $main) return; // 카드 안의 "자세히 보기" 같은 버튼은 읽지 않음
+    if (tag === 'A' && n.textContent.includes('↗')) return;    // 바깥 사이트로 가는 링크
+    if (tag === 'TABLE' && cl.contains('bus-tbl')) { flush(); const c = n.querySelector('caption'); if (c) { buf.push(c.textContent); flush(); } return; }
+    if (tag === 'DETAILS') { flush(); const s = n.querySelector('summary'); if (s) { buf.push(s.textContent); flush(); } return; }
+    const block = BLOCK.includes(tag);
+    if (block) flush();
+    n.childNodes.forEach(walk);
+    if (block) flush();
+  };
+  $main.childNodes.forEach(walk);
+  flush();
+  return chunks;
+}
+// 숫자·기호를 소리 내어 읽기 좋은 말로 바꿉니다 (전화번호는 한 자리씩, 시각은 "11시 30분")
+function speakableText(t) {
+  return t
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, ' ')
+    .replace(/(\d)\s*~\s*(\d)/g, '$1 부터 $2')
+    .replace(/\b\d{2,4}-\d{3,4}(?:-\d{4})?/g, m => m.split('-').map(g => [...g].map(d => DIGIT_READ[+d]).join(' ')).join(', '))
+    .replace(/(\d{1,2}):(\d{2})/g, (m, h, mi) => `${+h}시${+mi ? ' ' + +mi + '분' : ''}`)
+    .replace(/%/g, ' 퍼센트')
+    .replace(/~/g, '부터 ')
+    .replace(/\s*·\s*/g, ', ')
+    .replace(/[→›↗•⌣]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+function splitForSpeech(t, max = 110) { // 너무 긴 문장은 끊어서 읽습니다 (긴 낭독은 중간에 멈추는 브라우저가 있어요)
+  const out = [];
+  (t.match(/[^.!?]+[.!?]*/g) || [t]).forEach(p => {
+    p = p.trim();
+    while (p.length > max) { let i = p.lastIndexOf(' ', max); if (i < 40) i = max; out.push(p.slice(0, i)); p = p.slice(i).trim(); }
+    if (p) out.push(p);
+  });
+  return out;
+}
+function setReadMsg(text) { const m = document.querySelector('.read-bar .read-msg'); if (m) m.textContent = text; }
+function stopReading() { clearTimeout(readTimer); readQueue.length = 0; if (canSpeak) speechSynthesis.cancel(); }
+function startReading() {
+  if (!canSpeak) return;
+  stopReading();
+  setReadMsg('');
+  readTimer = setTimeout(() => { // 막 취소한 직후에는 일부 브라우저가 새 낭독을 무시해서 잠깐 쉬었다가 시작합니다
+    const voices = speechSynthesis.getVoices();
+    const ko = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ko'));
+    if (voices.length && !ko) { setReadMsg('이 기기에는 한국어 읽어주기 목소리가 없어서 읽어 드릴 수 없어요.'); return; }
+    screenChunks().map(speakableText).filter(Boolean).flatMap(t => splitForSpeech(t)).forEach(t => {
+      const u = new SpeechSynthesisUtterance(t);
+      u.lang = 'ko-KR'; u.rate = 0.9;
+      if (ko) u.voice = ko;
+      readQueue.push(u);
+      speechSynthesis.speak(u);
+    });
+  }, 150);
+}
+function readBar() {
+  return el('div', { class: 'read-bar', role: 'group', 'aria-label': '읽어주기 조절' },
+    el('strong', {}, '🔊 읽어주기 켜짐'),
+    el('button', { type: 'button', class: 'voice-btn', onclick: startReading }, '▶ 처음부터 다시'),
+    el('button', { type: 'button', class: 'voice-btn', onclick: stopReading }, '⏹ 멈추기'),
+    el('p', { class: 'read-msg small', role: 'status' }));
+}
+
 function render() {
+  stopReading();
   $main.replaceChildren(...screens[state.screen]().filter(Boolean));
+  if (readOn) { $main.prepend(readBar()); startReading(); }
   const home = state.screen === 'home';
   $banner.hidden = home;
   $bottom.hidden = home;
@@ -1276,6 +1357,20 @@ fontBtn.addEventListener('click', () => {
   document.documentElement.style.setProperty('--scale', scale);
   fontBtn.setAttribute('aria-label', `글자 크기 변경 (현재 ${Math.round(scale * 100)}%)`);
 });
+
+/* ---------- 읽어주기 켜고 끄기 (머리글 버튼) ---------- */
+const readBtn = document.getElementById('readBtn');
+if (!canSpeak) readBtn.hidden = true; // 이 브라우저가 읽어주기를 지원하지 않으면 버튼을 숨깁니다
+readBtn.addEventListener('click', () => {
+  readOn = !readOn;
+  readBtn.setAttribute('aria-pressed', String(readOn));
+  readBtn.setAttribute('aria-label', readOn ? '읽어주기 끄기' : '읽어주기 켜기: 화면 내용을 소리로 읽어 줘요');
+  readBtn.textContent = readOn ? '🔊 읽어주기 켜짐' : '🔊 읽어주기';
+  setSiteMenu(false);
+  $main.querySelector('.read-bar')?.remove();
+  if (readOn) { $main.prepend(readBar()); startReading(); } else stopReading();
+});
+window.addEventListener('pagehide', stopReading);
 
 /* ---------- 성공버스 시간표 보기 (머리글 버튼) ---------- */
 document.getElementById('busBtn').addEventListener('click', () => { setSiteMenu(false); go('bus', { busStop: null }); });
