@@ -263,7 +263,7 @@ const questions = {
   money: [{ prompt: '어떤 경제적 어려움이 가장 크신가요?', choices: ['생활비가 부족해요', '주거비가 부담돼요', '어떤 지원이 있는지 궁금해요'] }],
   food: [{ prompt: '어떤 점이 가장 불편하신가요?', choices: ['식사를 준비하기 어려워요', '청소나 집안일이 어려워요', '둘 다 어려워요'] }],
   mobility: [{ prompt: '언제 이동이 가장 어려우신가요?', choices: ['병원에 갈 때', '복지관이나 외부활동을 할 때', '외출 자체가 어려워요'] }],
-  lonely: [{ prompt: '어떤 활동이 가장 편하실까요?', choices: ['소규모 모임에 참여하고 싶어요', '누군가와 이야기하고 싶어요', '혼자서 쉬고 싶어요'] }],
+  lonely: [{ prompt: '어떤 활동이 가장 편하실까요?', choices: ['소규모 모임에 참여하고 싶어요', '새로운 취미를 배우며 친해지고 싶어요', '누군가와 이야기하고 싶어요', '혼자서 쉬고 싶어요'] }],
   center: [{ prompt: '복지관에서 무엇이 가장 궁금하세요?', choices: ['어디에 있는지', '어떤 프로그램이 있는지', '처음 이용하는 방법'] }],
   unknown: [{ prompt: '요즘 가장 신경 쓰이는 일은 무엇인가요?', choices: ['생활비', '집안일이나 이동', '외로움이나 관계', '아직 잘 모르겠어요'] }, { prompt: '어떤 방식으로 도움을 알아볼까요?', choices: ['관련 서비스 모두 보기', '복지관 정보 보기', '국가 복지제도 알아보기'] }]
 };
@@ -906,6 +906,9 @@ const screens = {
       // 이야기 나눌 사람을 원하면 마음 상담 기관을 맨 앞에 보여줍니다.
       const order = ['f-itda', 'f-single', 'f-seongdong', 'f-seongsu', 'f-oksu', 'f-mental'];
       if (state.answers[0]?.includes('이야기')) order.unshift(order.splice(order.indexOf('f-mental'), 1)[0]);
+      // "새로운 취미를 배우며 친해지고 싶어요"를 고르면 취미 수업·모임이 있는 곳만 보여 줍니다
+      const hobby = !!state.answers[0]?.includes('취미');
+      if (hobby) order.splice(0, order.length, 'f-single', 'f-seongsu', 'f-seongdong', 'f-oksu', 'f-itda');
       // "혼자서 쉬고 싶어요"를 고르면 서울잇다플레이스를 맨 위에 자세히 소개합니다 (DB에 아직 없으면 기존 목록을 그대로 보여 줍니다)
       const itda = facilities.find(f => f.id === 'f-itda');
       const alone = !!(state.answers[0]?.includes('혼자서') && itda && lonelyPrograms[itda.id]);
@@ -925,6 +928,9 @@ const screens = {
           lonelyCard(itda, true),
           el('h2', { style: 'font-size:1.15rem;margin-top:22px' }, '다른 곳도 알아보세요'),
           small('마음이 가는 곳에 전화로 편하게 물어보세요. 기관 공식 안내로 확인한 내용이며, 대상과 모집 시기는 바뀔 수 있어요.')
+        ] : hobby ? [
+          el('h2', {}, '새로운 취미를 함께 배울 수 있는 곳'),
+          small('취미 수업이나 모임에서 이웃을 만날 수 있는 곳이에요. 마음이 가는 곳에 전화로 편하게 물어보세요. 기관 공식 안내로 확인한 내용이며, 대상과 모집 시기는 바뀔 수 있어요.')
         ] : [
           el('h2', {}, '우리 복지관에 연락주세요'),
           small('혼자라고 느껴질 때 함께할 수 있는 프로그램이에요. 마음이 가는 곳에 전화로 편하게 물어보세요. 기관 공식 안내로 확인한 내용이며, 대상과 모집 시기는 바뀔 수 있어요.')
