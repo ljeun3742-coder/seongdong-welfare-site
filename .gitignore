@@ -1,0 +1,7 @@
+# 올리지 않을 파일
+.env.local
+.env*.local
+*.bak
+*.broken.bak
+Thumbs.db
+.DS_Store

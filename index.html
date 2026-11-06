@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>성동구 복지도우미 — 성동구 복지정보 (시연용)</title>
+  <meta name="description" content="무엇이 필요한지 몰라도 괜찮아요. 몇 가지 질문으로 도움이 될 만한 복지정보를 함께 찾아봅니다. (시연용 초안)">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">본문으로 바로가기</a>
+
+  <header class="top">
+    <button class="brand" id="brand" type="button">♡ 성동구 복지도우미</button>
+    <div class="top-actions">
+      <button class="font-btn" id="fontBtn" type="button" aria-label="글자 크기 키우기">가+ 글씨</button>
+      <div class="site-menu">
+        <button class="font-btn" id="siteBtn" type="button" aria-expanded="false" aria-controls="sitePanel">복지사이트 ▾</button>
+        <div class="site-panel" id="sitePanel" hidden>
+          <a href="https://wis.seoul.go.kr" target="_blank" rel="noopener noreferrer">서울복지포털 바로가기</a>
+          <a href="https://www.bokjiro.go.kr" target="_blank" rel="noopener noreferrer">복지로 바로가기</a>
+          <a href="https://www.sd.go.kr/main/contents.do?key=5326&amp;" target="_blank" rel="noopener noreferrer">성동복지종합상담센터</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="demo-banner" id="demoBanner" hidden role="note">
+    개발 시연용 홈페이지 · 복지정보는 아직 검증되지 않은 예시입니다. 실제 신청 자격을 판정하지 않습니다.
+  </div>
+
+  <main id="main" class="content" tabindex="-1" aria-live="polite"></main>
+
+  <nav class="bottom" id="bottomNav" hidden aria-label="이동">
+    <button type="button" id="backBtn" class="bottom-btn">← 이전</button>
+    <button type="button" id="homeBtn" class="bottom-btn primary">⌂ 처음으로</button>
+  </nav>
+
+  <footer class="foot">
+    <p id="footNote">이 사이트는 <strong>시연용 초안</strong>입니다. 실제 복지정보·상담 접수 시스템이 아니며, 개인정보를 입력받거나 저장하지 않습니다.</p>
+    <p>정확한 정보는 <a href="https://www.sd.go.kr" target="_blank" rel="noopener noreferrer">성동구청</a> 또는 <a href="https://www.bokjiro.go.kr" target="_blank" rel="noopener noreferrer">복지로</a>에서 확인해 주세요.</p>
+  </footer>
+
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
