@@ -128,8 +128,6 @@ const agePrograms = {
   }
 };
 
-// 분류를 더 늘리지 않고, 전체 복지서비스는 서울복지포털로 안내합니다.
-const seoulPortalLink = () => el('a', { class: 'choice secondary', href: 'https://wis.seoul.go.kr/', target: '_blank', rel: 'noopener noreferrer' }, '🔎  서울복지포털에서 더 찾아보기 ↗');
 const mapUrl = addr => 'https://map.naver.com/p/search/' + encodeURIComponent(addr.replace(/\s*\(.*$/, '').replace(/,.*$/, ''));
 const facilityCard = f => el('button', { type: 'button', class: 'card', onclick: () => go('detail', { detail: f }) },
   el('h3', {}, f.name), el('p', { style: 'margin:0 0 4px' }, '📍 ' + f.address), small('☎ ' + f.phone),
@@ -1066,7 +1064,6 @@ const screens = {
       small('이 사이트는 지원 자격을 판정하지 않습니다. 정확한 대상 여부는 129 또는 주민센터에서 확인해 주세요.'),
       el('div', { style: 'height:14px' }),
       btn('💰  소득이 어려울 때 받을 수 있는 지원 보기', () => go('results', { category: 'money', step: 0, answers: [] })),
-      seoulPortalLink(),
       btn('🎂  다른 연령대 보기', () => go('ages'), true),
       btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
     ];
@@ -1099,7 +1096,6 @@ const screens = {
         ...facilities.map(facilityCard),
         small('운영시간과 프로그램은 기관마다 다르니 방문 전에 전화로 확인해 주세요.'),
         el('div', { style: 'height:14px' }),
-        seoulPortalLink(),
         btn('📚  다른 도움도 찾아보기', () => go('topics')),
         btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
       ];
@@ -1121,7 +1117,6 @@ const screens = {
         facilityCard(facilities.find(f => f.id === 'f-mental')),
         small('이 사이트는 자격을 판정하지 않습니다. 정확한 지원 여부는 129 또는 주민센터에서 확인해 주세요.'),
         el('div', { style: 'height:14px' }),
-        seoulPortalLink(),
         btn('📚  다른 도움도 찾아보기', () => go('topics')),
         btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
       ];
@@ -1179,7 +1174,6 @@ const screens = {
       ...(unsure ? [btn('🤝  상담 · 복지관 안내 바로가기', () => go('consult'))] : []),
       ...list.map(s => el('button', { type: 'button', class: 'card', onclick: () => go('detail', { detail: s }) },
         el('h3', {}, s.name), small(s.summary), el('span', { class: 'more' }, '자세히 보기  ›'))),
-      seoulPortalLink(),
       btn('📚  다른 도움도 찾아보기', () => go('topics')),
       btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
     ];
