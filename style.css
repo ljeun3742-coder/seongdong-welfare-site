@@ -108,6 +108,11 @@ dl.info dd { margin: 0; }
 .fld label { display: block; font-weight: 800; margin-bottom: 6px; }
 .fld input, .fld select { width: 100%; min-height: 52px; padding: 10px 14px; font: inherit; color: var(--ink); background: #fff; border: 1.5px solid #CDB7AB; border-radius: 12px; }
 .fld input:focus, .fld select:focus { border-color: var(--accent); }
+/* 도움 검색 */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.chip { min-height: 46px; padding: 8px 16px; background: var(--peach); border: 1.5px solid var(--accent-soft); border-radius: 23px; color: var(--accent); font-weight: 700; font-size: 1rem; }
+.chip:hover { background: #FBE5D5; }
+.kind { display: inline-block; margin-bottom: 6px; padding: 2px 10px; background: var(--peach); border: 1px solid var(--accent-soft); border-radius: 10px; color: var(--accent); font-size: .8rem; font-weight: 700; }
 /* 성공버스 시간표 */
 .bus-quick { background: var(--peach); border: 1px solid var(--accent-soft); border-radius: 12px; padding: 12px 14px; font-weight: 700; line-height: 1.55; }
 .bus-pick { font-size: 1.1rem; margin: 18px 0 8px; }

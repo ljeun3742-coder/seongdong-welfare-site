@@ -277,7 +277,7 @@ const keywordMap = [
 ];
 
 /* ---------- 상태 ---------- */
-const state = { screen: 'home', group: 'daily', category: 'unknown', step: 0, answers: [], detail: null, age: null, busStop: null };
+const state = { screen: 'home', group: 'daily', category: 'unknown', step: 0, answers: [], detail: null, age: null, busStop: null, q: '' };
 const history = []; // 이전 화면 스택
 let readOn = false; // 읽어주기(머리글 버튼)가 켜져 있는지
 
@@ -330,7 +330,7 @@ function back() {
 }
 function reset() {
   history.length = 0;
-  Object.assign(state, { screen: 'home', step: 0, answers: [], detail: null, busStop: null });
+  Object.assign(state, { screen: 'home', step: 0, answers: [], detail: null, busStop: null, q: '' });
   render();
 }
 
@@ -1040,11 +1040,11 @@ const screens = {
     return [
       small('첫 번째 질문'),
       el('h2', {}, '어떤 복지정보가 필요하신가요?'),
-      bubble(['아래에 2개의 질문을 통해 복지정보를 쉽게 알아볼 수 있어요! 복지관 상담을 원하시면 ', el('strong', { class: 'em' }, '❔ 어떤 도움을 받을 수 있는지 모르겠어요'), ' 눌러주세요!']),
+      bubble(['아래에 2개의 질문을 통해 복지정보를 쉽게 알아볼 수 있어요! 찾고 싶은 내용을 직접 검색하거나 복지관 상담을 원하시면 ', el('strong', { class: 'em' }, '❔ 어떤 도움을 받을 수 있는지 모르겠어요'), ' 눌러주세요!']),
       ...categories.map(c => btn(categoryLabel(c), () => c.id === 'unknown'
-          ? go('results', { category: c.id, step: 0, answers: [] }) // 모르겠다면 질문 없이 바로 복지정보와 상담 안내
+          ? go('search', { category: c.id, step: 0, answers: [], q: '' }) // 모르겠다면 검색 화면으로 (검색 없이 보려면 "관련 서비스 모두 보기")
           : go('questions', { category: c.id, step: 0, answers: [] }),
-        c.id === 'center')) // 복지관 버튼은 흰색(secondary) 스타일
+        c.id === 'center' || c.id === 'unknown')) // 복지관·모르겠어요 버튼은 흰색(secondary) 스타일
     ];
   },
   ages() {
@@ -1273,6 +1273,88 @@ const screens = {
       btn('상담 · 복지관 안내로 이동', () => go('consult'), true)
     ];
   }
+};
+
+/* ---------- "어떤 도움을 받을 수 있는지 모르겠어요" → 검색 화면 ---------- */
+// 복지제도·복지관·행사·연령별 안내·질문 분야를 한꺼번에 찾아 줍니다. 데이터는 화면을 열 때마다 새로 모읍니다(DB에서 바뀐 내용도 반영).
+// 비슷한 말(예: 밥 → 식사·반찬)은 SEARCH_SYN 묶음으로 함께 찾습니다. 새 비슷한 말은 여기에 한 줄 추가하세요.
+const SEARCH_SYN = [
+  ['밥', '식사', '반찬', '밑반찬', '급식', '식당', '도시락'],
+  ['돈', '생활비', '소득', '급여', '수당', '연금', '지원금'],
+  ['병원', '진료', '의료', '치료', '건강'],
+  ['이동', '버스', '교통', '외출', '셔틀'],
+  ['외로', '고립', '말벗', '친구', '모임', '관계'],
+  ['아이', '아동', '어린이', '영유아', '키움', '방과후'],
+  ['어르신', '노인', '노년', '경로'],
+  ['마음', '우울', '불안', '정신', '심리'],
+  ['취미', '강좌', '교실', '수업', '배우']
+];
+const SEARCH_HINTS = ['밑반찬', '병원', '생활비', '취미', '외로움', '어르신', '아이 돌봄', '성공버스'];
+
+function searchItems() {
+  const items = [];
+  const add = (kind, title, parts, open) => items.push({ kind, title, parts: parts.filter(Boolean).map(String), open });
+  [...verifiedServices].forEach(s => add('복지제도', s.name, [s.summary, s.eligibility, s.benefit, s.agency], () => go('detail', { detail: s })));
+  facilities.forEach(f => add('복지관·센터', f.name, [f.summary, ...(f.programs || []), ...Object.values(agePrograms[f.id] || {}).flat(),...(lonelyPrograms[f.id] || []), f.address], () => go('detail', { detail: f })));
+  events.forEach(e => add('행사', e.title, [e.summary, e.place, e.start && fmtDate(e.start)], () => go('events')));
+  ageGroups.forEach(g => add('연령별 안내', `${g.icon} ${g.label} (${g.range})`, [g.note], () => go('age-result', { age: g.id })));
+  categories.filter(c => c.id !== 'unknown').forEach(c => add('질문으로 찾기', c.label, [c.short], () => go('questions', { category: c.id, step: 0, answers: [] })));
+  add('식사·밑반찬', '밑반찬과 식당 이용 서비스', ['저소득 어르신 급식지원, 복지관 밑반찬 서비스, 복지관 경로식당(식당) 이용 방법을 안내해요', '밑반찬 반찬 도시락 급식 식사 경로식당 돌봄SOS'],
+    () => go('results', { category: 'food', step: 0, answers: ['식사를 준비하기 어려워요'] }));
+  if (ageGroups.some(g => g.id === 'child')) add('연령별 안내', '우리동네키움센터 (아이꿈누리터)', ['성동구의 우리동네키움센터 목록이에요', '초등 돌봄 방과후 키움센터 아이꿈누리터', ...KIUM_CENTERS.map(c => c.name + ' ' + c.addr)], () => go('age-result', { age: 'child' }));
+  return items;
+}
+
+function searchFind(items, query) {
+  const toks = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const alts = toks.map(t => [t, ...SEARCH_SYN.filter(g => g.some(w => w === t || (t.length >= 2 && w.length >= 2 && (w.includes(t) || t.includes(w))))).flat()]);
+  return items.map((it, i) => {
+    const title = it.title.toLowerCase(), hay = title + ' ' + it.parts.join(' ').toLowerCase();
+    let score = 0;
+    for (const a of alts) {
+      if (!a.some(w => hay.includes(w))) return null; // 모든 낱말이 들어 있어야 합니다
+      score += (a.some(w => title.includes(w)) ? 3 : 1) + (hay.includes(a[0]) ? 2 : 0); // 쓴 말 그대로 들어 있으면 비슷한 말만 들어 있는 것보다 위에
+    }
+    const has = words => it.parts.find(p => words.some(w => p.toLowerCase().includes(w)));
+    const snippet = has(toks) || has(alts.flat()) || it.parts[0] || '';
+    return { it, score, i, snippet };
+  }).filter(Boolean).sort((a, b) => b.score - a.score || a.i - b.i);
+}
+
+screens.search = () => {
+  const items = searchItems();
+  const input = el('input', { type: 'search', id: 'help-q', placeholder: '예: 밑반찬, 병원, 생활비, 취미', autocomplete: 'off', enterkeyhint: 'search' });
+  input.value = state.q;
+  const out = el('div', { class: 'search-out', 'aria-live': 'polite' });
+  const setQ = v => { input.value = v; state.q = v; draw(); input.focus(); };
+  const hints = () => el('div', { class: 'chips' }, SEARCH_HINTS.map(w => el('button', { type: 'button', class: 'chip', onclick: () => setQ(w) }, w)));
+  const tail = () => [
+    btn('📋  관련 서비스 모두 보기', () => go('results', { category: 'unknown', step: 0, answers: [] }), true),
+    btn('🤝  상담 · 복지관 안내', () => go('consult'), true)
+  ];
+  function draw() {
+    const q = state.q.trim();
+    if (!q) return out.replaceChildren(small('이런 말로 찾아볼 수 있어요'), hints(), el('div', { style: 'height:16px' }), ...tail());
+    const found = searchFind(items, q);
+    if (!found.length) return out.replaceChildren(
+      bubble(`"${q}"에 맞는 내용을 찾지 못했어요. 다른 말로 써 보시거나, 아래 말을 눌러 보세요. 상담에서 직접 물어보셔도 돼요.`), hints(), el('div', { style: 'height:16px' }), ...tail());
+    out.replaceChildren(
+      small(`"${q}" 검색 결과 ${found.length}개`),
+      ...found.slice(0, 30).map(({ it, snippet }) => el('button', { type: 'button', class: 'card', onclick: it.open },
+        el('span', { class: 'kind' }, it.kind), el('h3', {}, it.title),
+        snippet ? small(snippet.length > 100 ? snippet.slice(0, 100) + '…' : snippet) : null,
+        el('span', { class: 'more' }, '자세히 보기  ›'))),
+      found.length > 30 ? small('결과가 많아 앞의 30개만 보여 드려요. 낱말을 더 넣어 좁혀 보세요.') : null,
+      ...tail());
+  }
+  input.addEventListener('input', () => { state.q = input.value; draw(); });
+  draw();
+  return [
+    el('h2', {}, '어떤 도움이 필요하신가요?'),
+    bubble('무엇이 필요한지 몰라도 괜찮아요. 떠오르는 말을 한 단어만 써 보세요. 복지제도·복지관·행사 중에서 찾아 드려요.'),
+    el('div', { class: 'fld' }, el('label', { for: 'help-q' }, '궁금한 말을 써 보세요'), input),
+    out
+  ];
 };
 
 screens.bus = () => (state.busStop ? busStopResult(state.busStop) : busPickerScreen());
